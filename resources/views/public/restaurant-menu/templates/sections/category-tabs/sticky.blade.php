@@ -1,0 +1,1 @@
+@include('public.restaurant-menu.templates.sections.category-tabs.pills')
