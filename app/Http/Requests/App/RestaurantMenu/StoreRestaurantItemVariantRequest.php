@@ -1,0 +1,38 @@
+<?php
+
+namespace App\Http\Requests\App\RestaurantMenu;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreRestaurantItemVariantRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return auth('web')->check();
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:120'],
+
+            'price' => ['required', 'numeric', 'min:0'],
+            'sale_price' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['required', 'string', 'max:10'],
+
+            'is_default' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'currency' => $this->input('currency', 'EGP'),
+            'is_default' => $this->boolean('is_default'),
+            'is_active' => $this->boolean('is_active'),
+            'sort_order' => $this->input('sort_order', 0),
+        ]);
+    }
+}
