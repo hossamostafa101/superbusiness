@@ -83,6 +83,12 @@ class RestaurantMenuOfferController extends Controller
 
             'starts_at' => $data['starts_at'] ?? null,
             'ends_at' => $data['ends_at'] ?? null,
+
+
+
+            'is_orderable' => $data['is_orderable'] ?? false,
+'order_mode' => $data['order_mode'] ?? 'standalone',
+'button_action' => $data['button_action'] ?? 'open_offer',
         ]);
 
         return redirect()
@@ -153,6 +159,13 @@ class RestaurantMenuOfferController extends Controller
 
             'starts_at' => $data['starts_at'] ?? null,
             'ends_at' => $data['ends_at'] ?? null,
+
+
+
+
+            'is_orderable' => $data['is_orderable'] ?? false,
+'order_mode' => $data['order_mode'] ?? 'standalone',
+'button_action' => $data['button_action'] ?? 'open_offer',
         ]);
 
         return redirect()

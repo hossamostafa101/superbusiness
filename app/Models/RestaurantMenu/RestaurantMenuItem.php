@@ -3,12 +3,15 @@
 namespace App\Models\RestaurantMenu;
 
 use App\Models\Workspace;
+use App\Support\WorkspaceTranslatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RestaurantMenuItem extends Model
 {
+    
+    use WorkspaceTranslatable;
     protected $table = 'restaurant_menu_items';
 
     protected $fillable = [

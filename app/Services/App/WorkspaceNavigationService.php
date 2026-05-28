@@ -14,6 +14,8 @@ class WorkspaceNavigationService
             'restaurant' => $this->restaurantGroups($workspace),
             'appointments' => $this->appointmentsGroups($workspace),
             'bio' => $this->bioGroups($workspace),
+
+            'medical' => $this->medicalGroups($workspace),
             default => $this->generalGroups($workspace),
         };
     }
@@ -86,10 +88,22 @@ class WorkspaceNavigationService
                 'active' => request()->routeIs('app.restaurant-menu.content-sections.*'),
             ],
             [
+                'label' => 'الروابط',
+                'icon' => 'bi-link-45deg',
+                'route' => route('app.links.index', $workspace),
+                'active' => request()->routeIs('app.links.*'),
+            ],
+            [
                 'label' => 'إعدادات المنيو',
                 'icon' => 'bi-gear',
                 'route' => route('app.restaurant-menu.settings.edit', $workspace),
                 'active' => request()->routeIs('app.restaurant-menu.settings.*'),
+            ],
+            [
+                'label' => 'اللغات',
+                'icon' => 'bi-translate',
+                'route' => route('app.languages.index', $workspace),
+                'active' => request()->routeIs('app.languages.*'),
             ],
             [
                 'label' => 'عرض المنيو',
@@ -244,6 +258,19 @@ class WorkspaceNavigationService
                         'route' => route('app.booking-settings.edit', $workspace),
                         'active' => request()->routeIs('app.booking-settings.*'),
                     ],
+
+                    [
+                        'label' => 'الباقات والدفع',
+                        'icon' => 'bi-credit-card',
+                        'route' => route('billing.plans', $workspace),
+                        'active' => request()->routeIs('billing.*'),
+                    ],
+                    [
+                        'label' => 'الروابط',
+                        'icon' => 'bi-link-45deg',
+                        'route' => route('app.links.index', $workspace),
+                        'active' => request()->routeIs('app.links.*'),
+                    ],
                 ],
             ],
         ];
@@ -296,6 +323,21 @@ class WorkspaceNavigationService
                         'route' => route('billing.plans', $workspace),
                         'active' => request()->routeIs('billing.*'),
                     ],
+
+                    [
+
+                        'label' => 'التصنيفات',
+                        'icon' => 'bi-tags',
+                        'route' => route('app.categories.index', $workspace),
+                        'active' => request()->routeIs('app.categories.*'),
+                    ],
+                    [
+                        'label' => 'المنتجات',
+                        'icon' => 'bi-box-seam',
+                        'route' => route('app.products.index', $workspace),
+                        'active' => request()->routeIs('app.products.*'),
+                    ],
+
                 ],
             ],
         ];
@@ -308,5 +350,108 @@ class WorkspaceNavigationService
         }
 
         return route($routeName, $workspace);
+    }
+
+
+
+
+
+
+
+
+    private function medicalGroups(\App\Models\Workspace $workspace): array
+    {
+        return [
+            [
+                'title' => 'النظام الطبي',
+                'items' => [
+                    [
+                        'label' => 'الرئيسية',
+                        'icon' => 'bi-speedometer2',
+                        'route' => route('app.medical.dashboard', $workspace),
+                        'active' => request()->routeIs('app.medical.dashboard'),
+                    ],
+                    [
+                        'label' => 'الفروع',
+                        'icon' => 'bi-building',
+                        'route' => route('app.medical.branches.index', $workspace),
+                        'active' => request()->routeIs('app.medical.branches.*'),
+                    ],
+                    [
+                        'label' => 'الإعدادات الطبية',
+                        'icon' => 'bi-gear',
+                        'route' => route('app.medical.settings.edit', $workspace),
+                        'active' => request()->routeIs('app.medical.settings.*'),
+                    ],
+                    [
+                        'label' => 'الأقسام',
+                        'icon' => 'bi-grid',
+                        'route' => route('app.medical.departments.index', $workspace),
+                        'active' => request()->routeIs('app.medical.departments.*'),
+                    ],
+                    [
+                        'label' => 'التخصصات',
+                        'icon' => 'bi-award',
+                        'route' => route('app.medical.specialties.index', $workspace),
+                        'active' => request()->routeIs('app.medical.specialties.*'),
+                    ],
+                    [
+                        'label' => 'الخدمات',
+                        'icon' => 'bi-clipboard2-pulse',
+                        'route' => route('app.medical.services.index', $workspace),
+                        'active' => request()->routeIs('app.medical.services.*'),
+                    ],
+                    [
+                        'label' => 'الفريق الطبي',
+                        'icon' => 'bi-person-badge',
+                        'route' => route('app.medical.staff.index', $workspace),
+                        'active' => request()->routeIs('app.medical.staff.*'),
+                    ],
+                    [
+                        'label' => 'المرضى',
+                        'icon' => 'bi-people',
+                        'route' => route('app.medical.patients.index', $workspace),
+                        'active' => request()->routeIs('app.medical.patients.*'),
+                    ],
+                    [
+                        'label' => 'الحجوزات',
+                        'icon' => 'bi-calendar-check',
+                        'route' => route('app.medical.appointments.index', $workspace),
+                        'active' => request()->routeIs('app.medical.appointments.*'),
+                    ],
+                    [
+    'label' => 'لوحة اليوم',
+    'icon' => 'bi-kanban',
+    'route' => route('app.medical.appointments.board', $workspace),
+    'active' => request()->routeIs('app.medical.appointments.board'),
+],
+[
+    'label' => 'الزيارات',
+    'icon' => 'bi-journal-medical',
+    'route' => route('app.medical.visits.index', $workspace),
+    'active' => request()->routeIs('app.medical.visits.*'),
+],
+[
+    'label' => 'الروشتات',
+    'icon' => 'bi-capsule',
+    'route' => route('app.medical.prescriptions.index', $workspace),
+    'active' => request()->routeIs('app.medical.prescriptions.*'),
+],
+                ],
+            ],
+
+
+            [
+                'title' => 'النظام',
+                'items' => [
+                    [
+                        'label' => 'الباقات والدفع',
+                        'icon' => 'bi-credit-card',
+                        'route' => route('billing.plans', $workspace),
+                        'active' => request()->routeIs('billing.*'),
+                    ],
+                ],
+            ],
+        ];
     }
 }

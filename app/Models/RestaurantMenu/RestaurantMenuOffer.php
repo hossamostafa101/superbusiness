@@ -32,6 +32,10 @@ class RestaurantMenuOffer extends Model
         'starts_at',
         'ends_at',
         'metadata',
+
+        'is_orderable',
+'order_mode',
+'button_action',
     ];
 
     protected $casts = [
@@ -41,6 +45,8 @@ class RestaurantMenuOffer extends Model
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'metadata' => 'array',
+
+        'is_orderable' => 'boolean',
     ];
 
     public function workspace(): BelongsTo
@@ -63,6 +69,27 @@ class RestaurantMenuOffer extends Model
         return $this->belongsTo(RestaurantMenuItem::class, 'item_id');
     }
 
+
+
+    public function offerItems()
+{
+    return $this->hasMany(RestaurantMenuOfferItem::class, 'offer_id')
+        ->orderBy('sort_order')
+        ->orderBy('id');
+}
+
+public function activeOfferItems()
+{
+    return $this->hasMany(RestaurantMenuOfferItem::class, 'offer_id')
+        ->with('item')
+        ->orderBy('sort_order')
+        ->orderBy('id');
+}
+
+
+
+
+
     public function imageUrl(): ?string
     {
         if (! $this->image) {
@@ -79,4 +106,5 @@ class RestaurantMenuOffer extends Model
 
         return asset('storage/' . $this->image);
     }
+    
 }

@@ -65,8 +65,12 @@ class PublicRestaurantOrderController extends Controller
             }
 
             return redirect()
-                ->route('public.restaurant-menu.order-success', [$workspace, $branch, $order])
-                ->with('success', 'تم إرسال الطلب بنجاح.');
+    ->route('public.restaurant-menu.orders.track', [$workspace, $branch, $order])
+    ->with('success', 'تم إرسال الطلب بنجاح.');
+    
+            // return redirect()
+            //     ->route('public.restaurant-menu.order-success', [$workspace, $branch, $order])
+            //     ->with('success', 'تم إرسال الطلب بنجاح.');
         } catch (\Throwable $e) {
             return back()
                 ->withInput()
@@ -89,4 +93,61 @@ class PublicRestaurantOrderController extends Controller
             'restaurantOrder'
         ));
     }
+
+
+
+
+
+
+
+
+
+
+
+    public function track(Workspace $workspace, RestaurantBranch $branch, RestaurantOrder $restaurantOrder)
+{
+    abort_if($workspace->status !== 'active', 404);
+    abort_if((int) $branch->workspace_id !== (int) $workspace->id, 404);
+    abort_if((int) $restaurantOrder->workspace_id !== (int) $workspace->id, 404);
+    abort_if((int) $restaurantOrder->branch_id !== (int) $branch->id, 404);
+
+    $restaurantOrder->load(['items.options', 'branch']);
+
+    return view('public.restaurant-menu.order-track', compact(
+        'workspace',
+        'branch',
+        'restaurantOrder'
+    ));
+}
+
+public function status(Workspace $workspace, RestaurantBranch $branch, RestaurantOrder $restaurantOrder)
+{
+    abort_if($workspace->status !== 'active', 404);
+    abort_if((int) $branch->workspace_id !== (int) $workspace->id, 404);
+    abort_if((int) $restaurantOrder->workspace_id !== (int) $workspace->id, 404);
+    abort_if((int) $restaurantOrder->branch_id !== (int) $branch->id, 404);
+
+    return response()->json([
+        'id' => $restaurantOrder->id,
+        'order_number' => $restaurantOrder->order_number,
+        'status' => $restaurantOrder->status,
+        'status_label' => $restaurantOrder->statusLabel(),
+        'progress_percent' => $this->orderProgressPercent($restaurantOrder->status),
+        'is_done' => in_array($restaurantOrder->status, ['completed', 'cancelled'], true),
+        'updated_at' => $restaurantOrder->updated_at?->format('H:i:s'),
+    ]);
+}
+
+private function orderProgressPercent(string $status): int
+{
+    return match ($status) {
+        'new' => 20,
+        'accepted' => 40,
+        'preparing' => 65,
+        'ready' => 85,
+        'completed' => 100,
+        'cancelled' => 100,
+        default => 20,
+    };
+}
 }

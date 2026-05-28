@@ -348,4 +348,137 @@ public function restaurantTableServiceRequests()
     return $this->hasMany(\App\Models\RestaurantMenu\RestaurantTableServiceRequest::class);
 }
 
+
+
+
+
+public function languages()
+{
+    return $this->hasMany(\App\Models\WorkspaceLanguage::class);
+}
+
+public function activeLanguages()
+{
+    return $this->languages()
+        ->where('is_active', true)
+        ->orderByDesc('is_default')
+        ->orderBy('sort_order')
+        ->orderBy('id');
+}
+
+public function translations()
+{
+    return $this->hasMany(\App\Models\WorkspaceTranslation::class);
+}
+
+public function defaultLanguage()
+{
+    return $this->hasOne(\App\Models\WorkspaceLanguage::class)
+        ->where('is_default', true);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+public function medicalSetting()
+{
+    return $this->hasOne(\Modules\Medical\Models\MedicalSetting::class);
+}
+
+public function medicalBranches()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalBranch::class);
+}
+
+public function medicalDepartments()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalDepartment::class);
+}
+
+public function medicalSpecialties()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalSpecialty::class);
+}
+
+public function medicalServices()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalService::class);
+}
+
+public function medicalStaff()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalStaff::class);
+}
+
+public function medicalPatients()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalPatient::class);
+}
+
+
+
+
+
+
+
+
+public function medicalStaffServices()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalStaffService::class);
+}
+
+
+
+
+
+
+public function medicalStaffWorkingHours()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalStaffWorkingHour::class);
+}
+
+
+
+
+
+
+
+public function medicalAppointments()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalAppointment::class);
+}
+
+
+
+public function medicalVisits()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalVisit::class);
+}
+
+public function medicalVisitNotes()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalVisitNote::class);
+}
+
+
+
+
+public function medicalPrescriptions()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalPrescription::class);
+}
+
+public function medicalPrescriptionItems()
+{
+    return $this->hasMany(\Modules\Medical\Models\MedicalPrescriptionItem::class);
+}
 }

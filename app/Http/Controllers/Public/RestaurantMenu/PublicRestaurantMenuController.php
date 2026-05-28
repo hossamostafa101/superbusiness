@@ -55,6 +55,39 @@ class PublicRestaurantMenuController extends Controller
         abort_if((int) $branch->workspace_id !== (int) $workspace->id, 404);
         abort_if(! $branch->is_active, 404);
 
+
+
+
+
+
+
+        //         $languages = $workspace->activeLanguages()->get();
+
+        // $defaultLanguage = $languages->firstWhere('is_default', true)
+        //     ?: $languages->first();
+
+        // $currentLanguageCode = request()->input('lang');
+
+        // $currentLanguage = $languages->firstWhere('code', $currentLanguageCode)
+        //     ?: $defaultLanguage;
+
+        // if ($currentLanguage) {
+        //     app()->setLocale($currentLanguage->code);
+        // }
+
+        // $isRtl = $currentLanguage?->direction === 'rtl';
+
+
+
+
+
+
+
+
+
+
+
+
         $workspace->loadMissing('businessProfile');
 
         $selectedTable = null;
@@ -199,6 +232,162 @@ class PublicRestaurantMenuController extends Controller
             ->get();
 
 
+
+
+
+
+        $languages = $workspace->activeLanguages()->get();
+
+        $defaultLanguage = $languages->firstWhere('is_default', true)
+            ?: $languages->first();
+
+        $currentLanguageCode = request()->input('lang');
+
+        $currentLanguage = $languages->firstWhere('code', $currentLanguageCode)
+            ?: $defaultLanguage;
+
+        if ($currentLanguage) {
+            app()->setLocale($currentLanguage->code);
+        }
+
+        $translationsMap = collect();
+
+        if ($currentLanguage) {
+            $translationsMap = $workspace->translations()
+                ->where('language_code', $currentLanguage->code)
+                ->get()
+                ->keyBy(function ($translation) {
+                    return $translation->translatable_type
+                        . ':' . $translation->translatable_id
+                        . ':' . $translation->field;
+                });
+        }
+
+        $translate = function ($model, string $field, $fallback = null) use ($translationsMap) {
+            if (! $model) {
+                return $fallback;
+            }
+
+            $key = get_class($model) . ':' . $model->id . ':' . $field;
+
+            $translation = $translationsMap->get($key);
+
+            if ($translation && $translation->value !== null && trim($translation->value) !== '') {
+                return $translation->value;
+            }
+
+            return $fallback ?? ($model->{$field} ?? null);
+        };
+
+
+
+
+
+
+
+        $uiTranslations = [
+            'ar' => [
+                'categories' => 'التصنيفات',
+                'swipe' => 'اسحب ←',
+                'featured' => 'مميز',
+                'items_count' => 'أصناف',
+                'waiter_request' => 'طلب الجرسون',
+                'cash_request' => 'طلب الحساب',
+                'back_to_menu' => 'الرجوع للمنيو',
+                'order_details' => 'تفاصيل الطلب',
+            ],
+
+            'en' => [
+                'categories' => 'Categories',
+                'swipe' => 'Swipe →',
+                'featured' => 'Featured',
+                'items_count' => 'items',
+                'waiter_request' => 'Call waiter',
+                'cash_request' => 'Request bill',
+                'back_to_menu' => 'Back to menu',
+                'order_details' => 'Order details',
+            ],
+        ];
+
+        $tUi = function (string $key, ?string $fallback = null) use ($uiTranslations, $currentLanguage) {
+            $code = $currentLanguage?->code ?? 'ar';
+
+            // مهم لو عندك en-US أو ar-EG
+            $shortCode = strtolower(substr($code, 0, 2));
+
+            return $uiTranslations[$shortCode][$key]
+                ?? $uiTranslations['ar'][$key]
+                ?? $fallback
+                ?? $key;
+        };
+
+
+
+        $debugTranslate = function ($model, string $field, $fallback = null) use ($translationsMap, $currentLanguage) {
+            if (! $model) {
+                return [
+                    'ok' => false,
+                    'reason' => 'model_null',
+                ];
+            }
+
+            $key = get_class($model) . ':' . $model->id . ':' . $field;
+
+            $translation = $translationsMap->get($key);
+
+            return [
+                'lang' => $currentLanguage?->code,
+                'class' => get_class($model),
+                'id' => $model->id,
+                'field' => $field,
+                'key' => $key,
+                'fallback' => $fallback ?? ($model->{$field} ?? null),
+                'found' => (bool) $translation,
+                'value' => $translation?->value,
+                'final' => ($translation && $translation->value !== null && $translation->value !== '')
+                    ? $translation->value
+                    : ($fallback ?? ($model->{$field} ?? null)),
+            ];
+        };
+
+
+
+
+
+
+        $offersPayload = [];
+
+if (!empty($contentSections)) {
+    foreach ($contentSections as $contentSection) {
+        foreach (($contentSection->activeOffers ?? collect()) as $offer) {
+            if (! $offer->is_orderable) {
+                continue;
+            }
+
+            $imageUrl = $offer->imageUrl();
+
+            if (! $imageUrl && $offer->item?->image) {
+                $imageUrl = asset('storage/' . $offer->item->image);
+            }
+
+            $offersPayload[$offer->id] = [
+                'id' => $offer->id,
+                'line_type' => 'offer',
+                'offer_id' => $offer->id,
+                'title' => $translate($offer, 'title', $offer->title),
+                'description' => $translate($offer, 'description', $offer->description),
+                'image' => $imageUrl,
+                'price' => (float) ($offer->new_price ?: $offer->old_price ?: 0),
+                'old_price' => $offer->old_price ? (float) $offer->old_price : null,
+                'currency' => $offer->currency ?: 'EGP',
+                'order_mode' => $offer->order_mode ?: 'standalone',
+                'item_id' => $offer->item_id,
+            ];
+        }
+    }
+}
+
+
         return view('public.restaurant-menu.show', compact(
             'workspace',
             'branch',
@@ -214,6 +403,12 @@ class PublicRestaurantMenuController extends Controller
             'menuTheme',
             'contentSections',
             'links',
+
+            'languages',
+            'currentLanguage',
+            'translate',
+            'tUi',
+            'debugTranslate'
         ));
     }
 
@@ -442,4 +637,44 @@ class PublicRestaurantMenuController extends Controller
 
         return collect([$offer]);
     }
+
+
+
+
+
+    public function offers(Workspace $workspace, RestaurantBranch $branch)
+{
+    abort_if((int) $branch->workspace_id !== (int) $workspace->id, 404);
+
+    $offers = \App\Models\RestaurantMenu\RestaurantMenuOffer::query()
+        ->where('workspace_id', $workspace->id)
+        ->where(function ($query) use ($branch) {
+            $query->whereNull('branch_id')
+                ->orWhere('branch_id', $branch->id);
+        })
+        ->where('is_active', true)
+        ->where('is_orderable', true)
+        ->where(function ($query) {
+            $query->whereNull('starts_at')
+                ->orWhere('starts_at', '<=', now());
+        })
+        ->where(function ($query) {
+            $query->whereNull('ends_at')
+                ->orWhere('ends_at', '>=', now());
+        })
+        ->with([
+            'item.activeVariants',
+            'item.activeOptionGroups',
+            'activeOfferItems.item',
+        ])
+        ->orderBy('sort_order')
+        ->orderBy('id')
+        ->get();
+
+    return view('public.restaurant-menu.offers.index', compact(
+        'workspace',
+        'branch',
+        'offers'
+    ));
+}
 }

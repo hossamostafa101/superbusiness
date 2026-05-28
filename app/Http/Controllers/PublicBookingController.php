@@ -1,139 +1,139 @@
-<?php
+    <?php
 
-namespace App\Http\Controllers;
+    namespace App\Http\Controllers;
 
-use App\Http\Requests\Public\StorePublicBookingRequest;
-use App\Models\Workspace;
-use App\Services\Core\FeatureLimitService;
-use App\Services\Public\PublicBookingService;
+    use App\Http\Requests\Public\StorePublicBookingRequest;
+    use App\Models\Workspace;
+    use App\Services\Core\FeatureLimitService;
+    use App\Services\Public\PublicBookingService;
 
-class PublicBookingController extends Controller
-{
-    public function __construct(
-        private readonly PublicBookingService $publicBookingService,
-        private readonly FeatureLimitService $featureLimitService
-    ) {}
-
-    public function create(Workspace $workspace)
+    class PublicBookingController extends Controller
     {
-        abort_if($workspace->status !== 'active', 404);
+        public function __construct(
+            private readonly PublicBookingService $publicBookingService,
+            private readonly FeatureLimitService $featureLimitService
+        ) {}
 
-        $workspace->load('businessProfile');
+        public function create(Workspace $workspace)
+        {
+            abort_if($workspace->status !== 'active', 404);
 
-        $profile = $workspace->businessProfile;
+            $workspace->load('businessProfile');
 
-        abort_if(! $profile || ! $profile->is_published, 404);
+            $profile = $workspace->businessProfile;
 
-        $bookingEnabled = $this->featureLimitService->enabled($workspace, 'booking_enabled');
+            abort_if(! $profile || ! $profile->is_published, 404);
 
-        abort_if(! $bookingEnabled, 403, 'الحجز غير متاح في الباقة الحالية.');
+            $bookingEnabled = $this->featureLimitService->enabled($workspace, 'booking_enabled');
 
-        $services = $workspace->businessServices()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+            abort_if(! $bookingEnabled, 403, 'الحجز غير متاح في الباقة الحالية.');
 
-            $workspace->loadMissing('businessSettings');
+            $services = $workspace->businessServices()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
 
-$settings = [
-    'booking_days' => explode(',', $workspace->getSetting('booking_days', 'sat,sun,mon,tue,wed,thu')),
-    'booking_start_time' => $workspace->getSetting('booking_start_time', '10:00'),
-    'booking_end_time' => $workspace->getSetting('booking_end_time', '22:00'),
-    'booking_slot_interval' => (int) $workspace->getSetting('booking_slot_interval', 30),
-    'booking_advance_days' => (int) $workspace->getSetting('booking_advance_days', 14),
-];
+                $workspace->loadMissing('businessSettings');
 
-        return view('public.booking.create', compact('workspace', 'profile', 'services', 'settings'));
-    }
+    $settings = [
+        'booking_days' => explode(',', $workspace->getSetting('booking_days', 'sat,sun,mon,tue,wed,thu')),
+        'booking_start_time' => $workspace->getSetting('booking_start_time', '10:00'),
+        'booking_end_time' => $workspace->getSetting('booking_end_time', '22:00'),
+        'booking_slot_interval' => (int) $workspace->getSetting('booking_slot_interval', 30),
+        'booking_advance_days' => (int) $workspace->getSetting('booking_advance_days', 14),
+    ];
 
-    public function store(StorePublicBookingRequest $request, Workspace $workspace)
-    {
-        abort_if($workspace->status !== 'active', 404);
-
-        $bookingEnabled = $this->featureLimitService->enabled($workspace, 'booking_enabled');
-
-        abort_if(! $bookingEnabled, 403, 'الحجز غير متاح في الباقة الحالية.');
-
-        $appointmentsLimit = $this->featureLimitService->limit($workspace, 'appointments_limit', 10);
-
-        if ($appointmentsLimit !== -1) {
-            $currentCount = $workspace->businessAppointments()->count();
-
-            if ($currentCount >= $appointmentsLimit) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'لا يمكن استقبال حجوزات جديدة حاليًا.');
-            }
+            return view('public.booking.create', compact('workspace', 'profile', 'services', 'settings'));
         }
 
+        public function store(StorePublicBookingRequest $request, Workspace $workspace)
+        {
+            abort_if($workspace->status !== 'active', 404);
 
-        // /////////////////////////////////////////////////////////
-        $workspace->loadMissing('businessSettings');
+            $bookingEnabled = $this->featureLimitService->enabled($workspace, 'booking_enabled');
 
-$allowedDays = explode(',', $workspace->getSetting('booking_days', 'sat,sun,mon,tue,wed,thu'));
+            abort_if(! $bookingEnabled, 403, 'الحجز غير متاح في الباقة الحالية.');
 
-$dayMap = [
-    0 => 'sun',
-    1 => 'mon',
-    2 => 'tue',
-    3 => 'wed',
-    4 => 'thu',
-    5 => 'fri',
-    6 => 'sat',
-];
+            $appointmentsLimit = $this->featureLimitService->limit($workspace, 'appointments_limit', 10);
 
-$date = \Carbon\Carbon::parse($request->input('appointment_date'));
-$dayKey = $dayMap[$date->dayOfWeek];
+            if ($appointmentsLimit !== -1) {
+                $currentCount = $workspace->businessAppointments()->count();
 
-if (! in_array($dayKey, $allowedDays, true)) {
-    return back()
-        ->withInput()
-        ->with('error', 'هذا اليوم غير متاح للحجز.');
-}
-
-$start = $request->input('start_time');
-$bookingStart = $workspace->getSetting('booking_start_time', '10:00');
-$bookingEnd = $workspace->getSetting('booking_end_time', '22:00');
-
-if ($start < $bookingStart || $start >= $bookingEnd) {
-    return back()
-        ->withInput()
-        ->with('error', 'هذا الوقت خارج ساعات العمل.');
-}
-        // /////////////////////////////////////////////////////////
-
-        // $appointment = $this->publicBookingService->createBooking(
-        //     workspace: $workspace,
-        //     data: $request->validated()
-        // );
-
-        try {
-    $appointment = $this->publicBookingService->createBooking(
-        workspace: $workspace,
-        data: $request->validated()
-    );
-
-    return redirect()
-        ->route('public.booking.success', $workspace)
-        ->with('appointment_id', $appointment->id);
-} catch (\Throwable $e) {
-    return back()
-        ->withInput()
-        ->with('error', $e->getMessage());
-}
+                if ($currentCount >= $appointmentsLimit) {
+                    return back()
+                        ->withInput()
+                        ->with('error', 'لا يمكن استقبال حجوزات جديدة حاليًا.');
+                }
+            }
 
 
+            // /////////////////////////////////////////////////////////
+            $workspace->loadMissing('businessSettings');
+
+    $allowedDays = explode(',', $workspace->getSetting('booking_days', 'sat,sun,mon,tue,wed,thu'));
+
+    $dayMap = [
+        0 => 'sun',
+        1 => 'mon',
+        2 => 'tue',
+        3 => 'wed',
+        4 => 'thu',
+        5 => 'fri',
+        6 => 'sat',
+    ];
+
+    $date = \Carbon\Carbon::parse($request->input('appointment_date'));
+    $dayKey = $dayMap[$date->dayOfWeek];
+
+    if (! in_array($dayKey, $allowedDays, true)) {
+        return back()
+            ->withInput()
+            ->with('error', 'هذا اليوم غير متاح للحجز.');
     }
 
-    public function success(Workspace $workspace)
-    {
-        $workspace->load('businessProfile');
+    $start = $request->input('start_time');
+    $bookingStart = $workspace->getSetting('booking_start_time', '10:00');
+    $bookingEnd = $workspace->getSetting('booking_end_time', '22:00');
 
-        $profile = $workspace->businessProfile;
-
-        abort_if(! $profile || ! $profile->is_published, 404);
-
-        return view('public.booking.success', compact('workspace', 'profile'));
+    if ($start < $bookingStart || $start >= $bookingEnd) {
+        return back()
+            ->withInput()
+            ->with('error', 'هذا الوقت خارج ساعات العمل.');
     }
-}
+            // /////////////////////////////////////////////////////////
+
+            // $appointment = $this->publicBookingService->createBooking(
+            //     workspace: $workspace,
+            //     data: $request->validated()
+            // );
+
+            try {
+        $appointment = $this->publicBookingService->createBooking(
+            workspace: $workspace,
+            data: $request->validated()
+        );
+
+        return redirect()
+            ->route('public.booking.success', $workspace)
+            ->with('appointment_id', $appointment->id);
+    } catch (\Throwable $e) {
+        return back()
+            ->withInput()
+            ->with('error', $e->getMessage());
+    }
+
+
+        }
+
+        public function success(Workspace $workspace)
+        {
+            $workspace->load('businessProfile');
+
+            $profile = $workspace->businessProfile;
+
+            abort_if(! $profile || ! $profile->is_published, 404);
+
+            return view('public.booking.success', compact('workspace', 'profile'));
+        }
+    }

@@ -9,6 +9,8 @@ use App\Http\Controllers\App\BusinessLinkController;
 use App\Http\Controllers\App\BusinessProductController;
 use App\Http\Controllers\App\BusinessProfileController;
 use App\Http\Controllers\App\BusinessServiceController;
+use App\Http\Controllers\App\WorkspaceLanguageController;
+use App\Http\Controllers\App\WorkspaceTranslationController;
 use App\Http\Controllers\Billing\BillingController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\OnboardingController;
@@ -197,6 +199,42 @@ Route::middleware(['auth:web', 'workspace.access'])
 
         Route::put('booking-settings', [BookingSettingsController::class, 'update'])
             ->name('booking-settings.update');
+
+
+
+
+
+
+            
+    Route::resource('languages', WorkspaceLanguageController::class)
+    ->except(['show'])
+    ->parameters([
+        'languages' => 'language',
+    ]);
+
+Route::patch('languages/{language}/default', [WorkspaceLanguageController::class, 'makeDefault'])
+    ->name('languages.make-default');
+
+
+
+
+    Route::get('languages/{language}/translations', [WorkspaceTranslationController::class, 'index'])
+    ->name('languages.translations.index');
+
+Route::get('languages/{language}/translations/{type}/{id}/edit', [WorkspaceTranslationController::class, 'edit'])
+    ->name('languages.translations.edit');
+
+Route::put('languages/{language}/translations/{type}/{id}', [WorkspaceTranslationController::class, 'update'])
+    ->name('languages.translations.update');
+
+    
+
+
+    Route::post('languages/{language}/translations/{type}/{id}/auto-translate-row', [WorkspaceTranslationController::class, 'autoTranslateRow'])
+    ->name('languages.translations.auto-translate-row');
+
+    
+    
     });
 
 Route::get('p/{workspace:slug}', [PublicBusinessPageController::class, 'show'])

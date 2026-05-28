@@ -1,82 +1,168 @@
 @php
     $offers = $contentSection->activeOffers;
+
+    $sectionTitle = isset($translate)
+        ? $translate($contentSection, 'title', $contentSection->title)
+        : $contentSection->title;
+
+    $sectionSubtitle = isset($translate)
+        ? $translate($contentSection, 'subtitle', $contentSection->subtitle)
+        : $contentSection->subtitle;
+
+    $carouselId = 'offersCarousel_' . $contentSection->id;
 @endphp
 
 @if($offers->count())
-    <section class="od-offers-section">
+    <section class="od-offers-carousel-section">
         <div class="od-section-head">
             <div>
-                <h2>{{ $contentSection->title }}</h2>
+                <h2>{{ $sectionTitle }}</h2>
 
-                @if($contentSection->subtitle)
-                    <p>{{ $contentSection->subtitle }}</p>
+                @if($sectionSubtitle)
+                    <p>{{ $sectionSubtitle }}</p>
                 @endif
             </div>
-
-            <span class="od-swipe-hint">
-                عروض
-            </span>
         </div>
 
-        <div class="od-offers-scroll">
-            @foreach($offers as $offer)
-                <article
-                    class="od-offer-card"
-                    style="
-                        background: {{ $offer->background_color }};
-                        color: {{ $offer->text_color }};
-                    "
-                    @if($offer->item_id)
-                        data-item-id="{{ $offer->item_id }}"
-                    @endif
-                >
-                    <div class="od-offer-content">
-                        @if($offer->badge_text)
-                            <span class="od-offer-badge">
-                                {{ $offer->badge_text }}
-                            </span>
-                        @endif
+        <div
+            id="{{ $carouselId }}"
+            class="carousel slide od-offers-carousel"
+            data-bs-ride="carousel"
+            data-bs-interval="4200"
+            data-bs-touch="true"
+        >
+            @if($offers->count() > 1)
+                <div class="carousel-indicators od-offers-indicators">
+                    @foreach($offers as $offer)
+                        <button
+                            type="button"
+                            data-bs-target="#{{ $carouselId }}"
+                            data-bs-slide-to="{{ $loop->index }}"
+                            class="{{ $loop->first ? 'active' : '' }}"
+                            aria-current="{{ $loop->first ? 'true' : 'false' }}"
+                            aria-label="Slide {{ $loop->iteration }}"
+                        ></button>
+                    @endforeach
+                </div>
+            @endif
 
-                        <h3>{{ $offer->title }}</h3>
+            <div class="carousel-inner">
+                @foreach($offers as $offer)
+                    @php
+                        $title = isset($translate)
+                            ? $translate($offer, 'title', $offer->title)
+                            : $offer->title;
 
-                        @if($offer->subtitle)
-                            <p>{{ $offer->subtitle }}</p>
-                        @endif
+                        $subtitle = isset($translate)
+                            ? $translate($offer, 'subtitle', $offer->subtitle)
+                            : $offer->subtitle;
 
-                        @if($offer->new_price)
-                            <div class="od-offer-price">
-                                <strong>
-                                    {{ number_format((float) $offer->new_price, 2) }}
-                                    {{ $offer->currency }}
-                                </strong>
+                        $description = isset($translate)
+                            ? $translate($offer, 'description', $offer->description)
+                            : $offer->description;
 
-                                @if($offer->old_price)
-                                    <span>
-                                        {{ number_format((float) $offer->old_price, 2) }}
+                        $badgeText = isset($translate)
+                            ? $translate($offer, 'badge_text', $offer->badge_text)
+                            : $offer->badge_text;
+
+                        $buttonText = isset($translate)
+                            ? $translate($offer, 'button_text', $offer->button_text)
+                            : $offer->button_text;
+
+                        $imageUrl = $offer->imageUrl();
+
+                        if (! $imageUrl && $offer->item?->image) {
+                            $imageUrl = asset('storage/' . $offer->item->image);
+                        }
+
+                        $hasPrice = filled($offer->new_price);
+                    @endphp
+
+                    <div class="carousel-item {{ $loop->first ? 'active' : '' }}">
+                        {{-- <article
+                            class="od-offer-carousel-slide"
+                            @if($offer->item_id)
+                                data-item-id="{{ $offer->item_id }}"
+                            @endif
+                        > --}}
+                        <article
+    class="od-offer-carousel-slide"
+    data-offer-id="{{ $offer->id }}"
+    @if($offer->order_mode === 'single_item' && $offer->item_id)
+        data-item-id="{{ $offer->item_id }}"
+    @endif
+>
+
+                            @if($imageUrl)
+                                <img
+                                    src="{{ $imageUrl }}"
+                                    class="od-offer-bg-image"
+                                    alt="{{ $title }}"
+                                >
+                            @endif
+
+                            <div
+                                class="od-offer-bg-fallback"
+                                style="background: {{ $offer->background_color ?: '#2a120d' }};"
+                            ></div>
+
+                            <div class="od-offer-bg-overlay"></div>
+
+                            <div class="od-offer-carousel-content">
+                                @if($badgeText)
+                                    <span class="od-offer-carousel-badge">
+                                        {{ $badgeText }}
                                     </span>
                                 @endif
+
+                                <h3>
+                                    {{ $title }}
+                                </h3>
+
+                                @if($subtitle)
+                                    <div class="od-offer-carousel-subtitle">
+                                        {{ $subtitle }}
+                                    </div>
+                                @endif
+
+                                @if($description)
+                                    <p>
+                                        {{ \Illuminate\Support\Str::limit($description, 105) }}
+                                    </p>
+                                @endif
+
+                                @if($hasPrice)
+                                    <div class="od-offer-carousel-price">
+                                        <strong>
+                                            {{ number_format((float) $offer->new_price, 2) }}
+                                            {{ $offer->currency }}
+                                        </strong>
+
+                                        @if($offer->old_price)
+                                            <span>
+                                                {{ number_format((float) $offer->old_price, 2) }}
+                                                {{ $offer->currency }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                @if($buttonText && $offer->button_url)
+                                    <a
+                                        href="{{ $offer->button_url }}"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="od-offer-carousel-btn"
+                                        onclick="event.stopPropagation();"
+                                    >
+                                        {{ $buttonText }}
+                                    </a>
+                                @endif
                             </div>
-                        @endif
-
-                        @if($offer->button_text && $offer->button_url)
-                            <a
-                                href="{{ $offer->button_url }}"
-                                target="_blank"
-                                class="od-offer-btn"
-                                onclick="event.stopPropagation();"
-                            >
-                                {{ $offer->button_text }}
-                            </a>
-                        @endif
+                        </article>
                     </div>
-
-                    @if($offer->imageUrl())
-                        <img src="{{ $offer->imageUrl() }}" class="od-offer-image" alt="{{ $offer->title }}">
-                    @elseif($offer->item?->image)
-                        <img src="{{ asset('storage/' . $offer->item->image) }}" class="od-offer-image" alt="{{ $offer->title }}">
-                    @endif
-                </article>
-            @endforeach
+                @endforeach
+            </div>
         </div>
     </section>
 @endif

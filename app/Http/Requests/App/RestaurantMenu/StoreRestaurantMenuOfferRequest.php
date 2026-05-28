@@ -47,6 +47,12 @@ class StoreRestaurantMenuOfferRequest extends FormRequest
 
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+
+            
+
+            'is_orderable' => ['nullable', 'boolean'],
+'order_mode' => ['required', 'in:standalone,single_item,bundle'],
+'button_action' => ['nullable', 'in:none,open_offer,open_item,external_url'],
         ];
     }
 
@@ -58,6 +64,11 @@ class StoreRestaurantMenuOfferRequest extends FormRequest
             'currency' => $this->input('currency', 'EGP'),
             'background_color' => $this->input('background_color', '#111827'),
             'text_color' => $this->input('text_color', '#ffffff'),
+
+
+            'is_orderable' => $this->boolean('is_orderable'),
+'order_mode' => $this->input('order_mode', 'standalone'),
+'button_action' => $this->input('button_action', 'open_offer'),
         ]);
     }
 }

@@ -29,6 +29,9 @@ class RestaurantInvoiceItem extends Model
         'notes',
         'status',
         'metadata',
+
+        'line_type',
+'offer_id',
     ];
 
     protected $casts = [
@@ -78,4 +81,10 @@ class RestaurantInvoiceItem extends Model
     {
         return $this->hasMany(RestaurantInvoiceItemOption::class, 'invoice_item_id');
     }
+
+
+    public function offer(): BelongsTo
+{
+    return $this->belongsTo(RestaurantMenuOffer::class, 'offer_id');
+}
 }

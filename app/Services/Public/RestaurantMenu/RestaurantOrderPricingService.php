@@ -23,6 +23,68 @@ class RestaurantOrderPricingService
         $currency = 'EGP';
 
         foreach ($items as $rawLine) {
+
+
+
+
+            $lineType = $itemPayload['line_type'] ?? 'item';
+
+            if ($lineType === 'offer') {
+                $offer = \App\Models\RestaurantMenu\RestaurantMenuOffer::query()
+                    ->where('workspace_id', $workspace->id)
+                    ->where(function ($query) use ($branch) {
+                        $query->whereNull('branch_id')
+                            ->orWhere('branch_id', $branch->id);
+                    })
+                    ->where('is_active', true)
+                    ->where('is_orderable', true)
+                    ->find($itemPayload['offer_id'] ?? null);
+
+                if (! $offer) {
+                    continue;
+                }
+
+                $quantity = max(1, (int) ($itemPayload['quantity'] ?? 1));
+
+                $unitPrice = (float) ($offer->new_price ?? $offer->old_price ?? 0);
+
+                if ($unitPrice <= 0) {
+                    continue;
+                }
+
+                $currency = $offer->currency ?: 'EGP';
+
+                $lines[] = [
+                    'line_type' => 'offer',
+                    'offer' => $offer,
+                    'item' => null,
+                    'variant' => null,
+                    'options' => collect(),
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'options_total' => 0,
+                    'line_total' => $unitPrice * $quantity,
+                    'currency' => $currency,
+                    'notes' => $itemPayload['notes'] ?? null,
+
+                    'line_type' => 'item',
+                ];
+
+                $subtotal += $unitPrice * $quantity;
+
+                continue;
+            }
+
+
+
+
+
+
+
+
+
+
+
             $item = RestaurantMenuItem::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('branch_id', $branch->id)
@@ -46,7 +108,7 @@ class RestaurantOrderPricingService
 
             $selectedOptionIds = collect($rawLine['options'] ?? [])
                 ->filter()
-                ->map(fn ($id) => (int) $id)
+                ->map(fn($id) => (int) $id)
                 ->unique()
                 ->values();
 
@@ -66,7 +128,7 @@ class RestaurantOrderPricingService
                 ? (float) ($variant->sale_price ?? $variant->price)
                 : (float) ($item->sale_price ?? $item->price);
 
-            $optionsTotal = $options->sum(fn ($option) => (float) $option->price);
+            $optionsTotal = $options->sum(fn($option) => (float) $option->price);
 
             $quantity = max(1, (int) ($rawLine['quantity'] ?? 1));
             $lineTotal = ($unitPrice + $optionsTotal) * $quantity;
@@ -124,7 +186,7 @@ class RestaurantOrderPricingService
         $groups = $item->activeOptionGroups;
 
         foreach ($groups as $group) {
-            $groupOptionIds = $group->options->pluck('id')->map(fn ($id) => (int) $id);
+            $groupOptionIds = $group->options->pluck('id')->map(fn($id) => (int) $id);
             $selectedInGroup = $selectedOptionIds->intersect($groupOptionIds)->count();
 
             if ($group->is_required && $selectedInGroup < max(1, (int) $group->min_choices)) {

@@ -18,6 +18,7 @@ use App\Http\Controllers\App\RestaurantMenu\RestaurantTableController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantTableServiceRequestController;
 use App\Http\Controllers\Public\RestaurantMenu\PublicRestaurantInvoiceController;
 use App\Http\Controllers\Public\RestaurantMenu\PublicRestaurantMenuController;
+use App\Http\Controllers\Public\RestaurantMenu\PublicRestaurantOrderController;
 use App\Http\Controllers\Public\RestaurantMenu\PublicRestaurantTableServiceRequestController;
 
 Route::middleware(['auth:web', 'workspace.access', 'workspace.specification:restaurant'])
@@ -112,9 +113,15 @@ Route::delete('content-sections/{contentSection}/offers/{offer}', [RestaurantMen
 
 
 
+            
 
         Route::get('orders', [RestaurantOrderController::class, 'index'])
             ->name('orders.index');
+
+
+
+            Route::get('orders/live', [RestaurantOrderController::class, 'live'])
+    ->name('orders.live');
 
 
 
@@ -125,6 +132,9 @@ Route::delete('content-sections/{contentSection}/offers/{offer}', [RestaurantMen
             ->name('orders.update-status');
 
 
+            Route::get('orders/{restaurantOrder}/receipt', [RestaurantOrderController::class, 'receipt'])
+    ->name('orders.receipt');
+    
 
 
 
@@ -182,7 +192,18 @@ Route::patch('invoices/{restaurantInvoice}/recalculate', [RestaurantInvoiceContr
 
 Route::put('settings', [RestaurantMenuSettingsController::class, 'update'])
     ->name('settings.update');
+
+
+
+
+    
     });
+
+
+
+
+
+
 
 Route::get('menu/{workspace:slug}', [PublicRestaurantMenuController::class, 'showWorkspace'])
     ->name('public.restaurant-menu.workspace');
@@ -203,3 +224,19 @@ Route::get('menu/{workspace:slug}/{branch:slug}/invoices/{restaurantInvoice}', [
 
     Route::post('menu/{workspace:slug}/{branch:slug}/service-request', [PublicRestaurantTableServiceRequestController::class, 'store'])
     ->name('public.restaurant-menu.service-request.store');
+
+
+
+
+    Route::get('menu/{workspace:slug}/{branch:slug}/orders/{restaurantOrder}/track', [PublicRestaurantOrderController::class, 'track'])
+    ->name('public.restaurant-menu.orders.track');
+
+Route::get('menu/{workspace:slug}/{branch:slug}/orders/{restaurantOrder}/status', [PublicRestaurantOrderController::class, 'status'])
+    ->name('public.restaurant-menu.orders.status');
+
+
+
+
+
+    Route::get('menu/{workspace:slug}/{branch:slug}/offers', [PublicRestaurantMenuController::class, 'offers'])
+    ->name('public.restaurant-menu.offers');

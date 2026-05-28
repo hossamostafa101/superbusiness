@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Support\WorkspaceTranslatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BusinessProfile extends Model
 {
+    use WorkspaceTranslatable;
+    
     protected $fillable = [
         'workspace_id',
         'display_name',

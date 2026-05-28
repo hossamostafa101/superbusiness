@@ -40,7 +40,8 @@
                         </div>
 
                         <div class="od-food-body">
-                            <h3>{{ $item->name }}</h3>
+                            {{-- <h3>{{ $item->name }}</h3> --}}
+                            <h3>{{ $item->translated('name', $currentLanguageCode ?? app()->getLocale()) }}</h3>
 
                             @if($item->description)
                                 <p>
