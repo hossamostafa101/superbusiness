@@ -102,4 +102,26 @@ public function workspaces()
         ->withPivot('role')
         ->withTimestamps();
 }
+
+
+
+
+
+
+
+
+public function affiliateProfile()
+{
+    return $this->hasOne(\Modules\Affiliate\Models\AffiliateProfile::class);
+}
+
+public function affiliateReferrals()
+{
+    return $this->hasMany(\Modules\Affiliate\Models\AffiliateReferral::class, 'referred_user_id');
+}
+
+public function affiliateCommissions()
+{
+    return $this->hasMany(\Modules\Affiliate\Models\AffiliateCommission::class, 'referred_user_id');
+}
   }

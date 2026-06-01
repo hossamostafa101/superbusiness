@@ -13,7 +13,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('orders:driver-reminders')->everyMinute();
+        // $schedule->command('orders:driver-reminders')->everyMinute();
+        $schedule->command('affiliate:release-commissions')->dailyAt('02:00');
     }
 
     /**

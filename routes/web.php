@@ -107,12 +107,38 @@ Route::middleware(['auth:web', 'workspace.access'])
     });
 
 
-Route::get('/onboarding', [OnboardingController::class, 'create'])
-    ->name('onboarding.create');
+// Route::get('/onboarding', [OnboardingController::class, 'create'])
+//     ->name('onboarding.create');
 
 Route::post('/onboarding', [OnboardingController::class, 'store'])
     ->name('onboarding.store');
 
+
+
+        Route::get('/onboarding', [OnboardingController::class, 'create'])
+        ->name('onboarding.create');
+
+    Route::post('/onboarding/business', [OnboardingController::class, 'storeBusiness'])
+        ->name('onboarding.business.store');
+
+    Route::get('/onboarding/profile', [OnboardingController::class, 'profile'])
+        ->name('onboarding.profile');
+
+    Route::post('/onboarding/profile', [OnboardingController::class, 'storeProfile'])
+        ->name('onboarding.profile.store');
+
+    Route::get('/onboarding/restaurant-branch', [OnboardingController::class, 'restaurantBranch'])
+        ->name('onboarding.restaurant-branch');
+
+    Route::post('/onboarding/restaurant-branch', [OnboardingController::class, 'storeRestaurantBranch'])
+        ->name('onboarding.restaurant-branch.store');
+
+    Route::post('/onboarding/finish', [OnboardingController::class, 'finish'])
+        ->name('onboarding.finish');
+
+
+
+        
 
 Route::middleware(['auth:web', 'workspace.access'])
     ->prefix('app/{workspace:slug}')
@@ -242,6 +268,9 @@ Route::get('p/{workspace:slug}', [PublicBusinessPageController::class, 'show'])
 
 
 
+    Route::get('/offline-fallback', function () {
+    return view('public.restaurant-menu.pwa.offline-fallback');
+})->name('offline-fallback');
 
 
 Route::middleware('auth')->group(function () {});

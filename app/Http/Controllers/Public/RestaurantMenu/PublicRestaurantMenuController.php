@@ -9,6 +9,7 @@ use App\Models\RestaurantMenu\RestaurantMenuContentSection;
 use App\Models\RestaurantMenu\RestaurantMenuContentSectionItem;
 use App\Models\RestaurantMenu\RestaurantMenuOffer;
 use App\Models\Workspace;
+use App\Services\App\RestaurantMenu\RestaurantDeliverySettingsService;
 use App\Services\Core\FeatureLimitService;
 use App\Services\Public\RestaurantMenu\RestaurantInvoiceSessionService;
 use App\Services\Public\RestaurantMenu\RestaurantMenuSettingReader;
@@ -388,6 +389,16 @@ if (!empty($contentSections)) {
 }
 
 
+$deliverySettings = app(RestaurantDeliverySettingsService::class)
+    ->get($workspace, $branch);
+
+$deliveryZones = $workspace->activeRestaurantDeliveryZones()
+    ->where(function ($query) use ($branch) {
+        $query->whereNull('branch_id')
+            ->orWhere('branch_id', $branch->id);
+    })
+    ->get();
+
         return view('public.restaurant-menu.show', compact(
             'workspace',
             'branch',
@@ -408,7 +419,10 @@ if (!empty($contentSections)) {
             'currentLanguage',
             'translate',
             'tUi',
-            'debugTranslate'
+            'debugTranslate',
+
+            'deliverySettings',
+'deliveryZones',
         ));
     }
 

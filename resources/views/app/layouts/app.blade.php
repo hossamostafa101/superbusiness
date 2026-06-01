@@ -1,8 +1,5 @@
 {{-- resources/views/app/layouts/app.blade.php --}}
 @php
-    // $workspace = $workspace ?? request()->route('workspace');
-
-    // $publicUrl = $workspace ? route('public.business-page.show', $workspace) : url('/');
 
     $workspace = $workspace ?? request()->route('workspace');
 
@@ -18,138 +15,7 @@
 
     $navGroups = $workspace ? app(\App\Services\App\WorkspaceNavigationService::class)->groups($workspace) : [];
 
-    $navGroupsX = [
-        [
-            'title' => 'الصفحة',
-            'items' => [
-                [
-                    'label' => 'نظرة عامة',
-                    'icon' => 'bi-speedometer2',
-                    'route' => route('app.analytics.index', $workspace),
-                    'active' => request()->routeIs('app.analytics.*'),
-                ],
-                [
-                    'label' => 'بيانات الصفحة',
-                    'icon' => 'bi-person-badge',
-                    'route' => route('app.business-profile.edit', $workspace),
-                    'active' => request()->routeIs('app.business-profile.*'),
-                ],
-                [
-                    'label' => 'الروابط',
-                    'icon' => 'bi-link-45deg',
-                    'route' => route('app.links.index', $workspace),
-                    'active' => request()->routeIs('app.links.*'),
-                ],
-            ],
-        ],
-        [
-            'title' => 'الكتالوج',
-            'items' => [
-                [
-                    'label' => 'التصنيفات',
-                    'icon' => 'bi-tags',
-                    'route' => route('app.categories.index', $workspace),
-                    'active' => request()->routeIs('app.categories.*'),
-                ],
-                [
-                    'label' => 'المنتجات',
-                    'icon' => 'bi-box-seam',
-                    'route' => route('app.products.index', $workspace),
-                    'active' => request()->routeIs('app.products.*'),
-                ],
-            ],
-        ],
-        [
-            'title' => 'CRM والحجوزات',
-            'items' => [
-                [
-                    'label' => 'العملاء',
-                    'icon' => 'bi-people',
-                    'route' => route('app.customers.index', $workspace),
-                    'active' => request()->routeIs('app.customers.*'),
-                ],
-                [
-                    'label' => 'الخدمات',
-                    'icon' => 'bi-briefcase',
-                    'route' => route('app.services.index', $workspace),
-                    'active' => request()->routeIs('app.services.*'),
-                ],
-                [
-                    'label' => 'المواعيد',
-                    'icon' => 'bi-calendar-check',
-                    'route' => route('app.appointments.index', $workspace),
-                    'active' =>
-                        request()->routeIs('app.appointments.index') ||
-                        request()->routeIs('app.appointments.create') ||
-                        request()->routeIs('app.appointments.edit'),
-                ],
-                [
-                    'label' => 'تقويم المواعيد',
-                    'icon' => 'bi-calendar3',
-                    'route' => route('app.appointments.calendar', $workspace),
-                    'active' => request()->routeIs('app.appointments.calendar'),
-                ],
-                [
-                    'label' => 'إعدادات الحجز',
-                    'icon' => 'bi-gear',
-                    'route' => route('app.booking-settings.edit', $workspace),
-                    'active' => request()->routeIs('app.booking-settings.*'),
-                ],
-            ],
-        ],
-        [
-            'title' => 'منيو المطعم',
-            'items' => [
-                [
-                    'label' => 'الفروع',
-                    'icon' => 'bi-shop',
-                    'route' => route('app.restaurant-menu.branches.index', $workspace),
-                    'active' => request()->routeIs('app.restaurant-menu.branches.*'),
-                ],
-                [
-                    'label' => 'تصنيفات المنيو',
-                    'icon' => 'bi-list-ul',
-                    'route' => route('app.restaurant-menu.categories.index', $workspace),
-                    'active' => request()->routeIs('app.restaurant-menu.categories.*'),
-                ],
-                [
-                    'label' => 'أصناف المنيو',
-                    'icon' => 'bi-cup-hot',
-                    'route' => route('app.restaurant-menu.items.index', $workspace),
-                    'active' => request()->routeIs('app.restaurant-menu.items.*'),
-                ],
-                [
-                    'label' => 'طلبات المنيو',
-                    'icon' => 'bi-receipt',
-                    'route' => route('app.restaurant-menu.orders.index', $workspace),
-                    'active' => request()->routeIs('app.restaurant-menu.orders.*'),
-                ],
-                [
-                    'label' => 'الطاولات و QR',
-                    'icon' => 'bi-qr-code',
-                    'route' => route('app.restaurant-menu.tables.index', $workspace),
-                    'active' => request()->routeIs('app.restaurant-menu.tables.*'),
-                ],
-                [
-                    'label' => 'عرض المنيو',
-                    'icon' => 'bi-box-arrow-up-left',
-                    'route' => route('public.restaurant-menu.workspace', $workspace),
-                    'active' => false,
-                ],
-            ],
-        ],
-        [
-            'title' => 'النظام',
-            'items' => [
-                [
-                    'label' => 'الباقات والدفع',
-                    'icon' => 'bi-credit-card',
-                    'route' => route('billing.plans', $workspace),
-                    'active' => request()->routeIs('billing.*'),
-                ],
-            ],
-        ],
-    ];
+   
 @endphp
 
 <!DOCTYPE html>
@@ -388,6 +254,85 @@
                 padding: 18px !important;
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        .sidebar-group {
+    margin-bottom: 5px;
+}
+
+.sidebar-group-toggle {
+    width: 100%;
+    background: transparent;
+    text-align: inherit;
+}
+
+.sidebar-group-toggle .sidebar-chevron {
+    width: auto;
+    font-size: 12px;
+    transition: transform .18s ease;
+    opacity: .75;
+}
+
+.sidebar-group-toggle[aria-expanded="true"] .sidebar-chevron {
+    transform: rotate(180deg);
+}
+
+.sidebar-submenu {
+    margin: 2px 18px 8px 0;
+    padding: 4px 10px 4px 0;
+    border-right: 1px dashed rgba(255, 255, 255, .16);
+}
+
+.sidebar-sublink {
+    color: rgba(255, 255, 255, .62);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    margin-bottom: 3px;
+    font-size: 13px;
+    font-weight: 700;
+    transition: .18s ease;
+}
+
+.sidebar-sublink i {
+    width: 18px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.sidebar-sublink:hover {
+    background: rgba(255, 255, 255, .07);
+    color: #fff;
+}
+
+.sidebar-sublink.active {
+    background: rgba(96, 165, 250, .16);
+    color: #fff;
+}
     </style>
 
     @stack('head')
@@ -423,39 +368,71 @@
 
         <nav>
 
-            @foreach($navGroups as $group)
+           @foreach($navGroups as $group)
     <div class="nav-section">
         <div class="nav-section-title">
             {{ $group['title'] }}
         </div>
 
         @foreach($group['items'] as $item)
-            @continue(isset($item['exists']) && ! $item['exists'])
+            @php
+                $isVisible = $item['exists'] ?? true;
+                $hasChildren = !empty($item['children']);
+                $isActive = $item['active'] ?? false;
+                $collapseId = 'nav-collapse-' . ($item['key'] ?? \Illuminate\Support\Str::slug($item['label']));
+            @endphp
 
-            <a href="{{ $item['route'] }}"
-               target="{{ $item['target'] ?? '_self' }}"
-               class="sidebar-link {{ $item['active'] ? 'active' : '' }}">
-                <i class="bi {{ $item['icon'] }}"></i>
-                <span>{{ $item['label'] }}</span>
-            </a>
+            @continue(! $isVisible)
+
+            @if($hasChildren)
+                <div class="sidebar-group">
+                    <button
+                        type="button"
+                        class="sidebar-link sidebar-group-toggle {{ $isActive ? 'active' : '' }}"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#{{ $collapseId }}"
+                        aria-expanded="{{ $isActive ? 'true' : 'false' }}"
+                    >
+                        <i class="bi {{ $item['icon'] ?? 'bi-folder' }}"></i>
+                        <span>{{ $item['label'] }}</span>
+                        <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+                    </button>
+
+                    <div id="{{ $collapseId }}" class="collapse {{ $isActive ? 'show' : '' }}">
+                        <div class="sidebar-submenu">
+                            @foreach($item['children'] as $child)
+                                @php
+                                    $childVisible = $child['exists'] ?? true;
+                                @endphp
+
+                                @continue(! $childVisible)
+
+                                <a
+                                    href="{{ $child['route'] }}"
+                                    target="{{ $child['target'] ?? '_self' }}"
+                                    class="sidebar-sublink {{ ($child['active'] ?? false) ? 'active' : '' }}"
+                                >
+                                    <i class="bi {{ $child['icon'] ?? 'bi-dot' }}"></i>
+                                    <span>{{ $child['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @else
+                <a
+                    href="{{ $item['route'] }}"
+                    target="{{ $item['target'] ?? '_self' }}"
+                    class="sidebar-link {{ $isActive ? 'active' : '' }}"
+                >
+                    <i class="bi {{ $item['icon'] }}"></i>
+                    <span>{{ $item['label'] }}</span>
+                </a>
+            @endif
         @endforeach
     </div>
 @endforeach
 
-            {{-- @foreach ($navGroups as $group)
-                <div class="nav-section">
-                    <div class="nav-section-title">
-                        {{ $group['title'] }}
-                    </div>
-
-                    @foreach ($group['items'] as $item)
-                        <a href="{{ $item['route'] }}" class="sidebar-link {{ $item['active'] ? 'active' : '' }}">
-                            <i class="bi {{ $item['icon'] }}"></i>
-                            <span>{{ $item['label'] }}</span>
-                        </a>
-                    @endforeach
-                </div>
-            @endforeach --}}
         </nav>
 
         <div class="sidebar-footer">
@@ -551,13 +528,20 @@
                 }
             });
 
-            document.querySelectorAll('.sidebar-link').forEach(function(link) {
-                link.addEventListener('click', function() {
-                    if (window.innerWidth < 992) {
-                        closeSidebar();
-                    }
-                });
-            });
+            // document.querySelectorAll('.sidebar-link').forEach(function(link) {
+            //     link.addEventListener('click', function() {
+            //         if (window.innerWidth < 992) {
+            //             closeSidebar();
+            //         }
+            //     });
+            // });
+            document.querySelectorAll('.sidebar-link:not(.sidebar-group-toggle), .sidebar-sublink').forEach(function(link) {
+    link.addEventListener('click', function() {
+        if (window.innerWidth < 992) {
+            closeSidebar();
+        }
+    });
+});
         })();
     </script>
 

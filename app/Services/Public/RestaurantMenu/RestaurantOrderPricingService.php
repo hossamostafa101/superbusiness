@@ -2,11 +2,11 @@
 
 namespace App\Services\Public\RestaurantMenu;
 
+use App\Models\RestaurantMenu\RestaurantBranch;
 use App\Models\RestaurantMenu\RestaurantItemOption;
-use App\Models\RestaurantMenu\RestaurantItemOptionGroup;
 use App\Models\RestaurantMenu\RestaurantItemVariant;
 use App\Models\RestaurantMenu\RestaurantMenuItem;
-use App\Models\RestaurantMenu\RestaurantBranch;
+use App\Models\RestaurantMenu\RestaurantMenuOffer;
 use App\Models\Workspace;
 use Illuminate\Support\Collection;
 use RuntimeException;
@@ -23,14 +23,14 @@ class RestaurantOrderPricingService
         $currency = 'EGP';
 
         foreach ($items as $rawLine) {
-
-
-
-
-            $lineType = $itemPayload['line_type'] ?? 'item';
+            $lineType = $rawLine['line_type'] ?? (! empty($rawLine['offer_id']) ? 'offer' : 'item');
 
             if ($lineType === 'offer') {
-                $offer = \App\Models\RestaurantMenu\RestaurantMenuOffer::query()
+                if (empty($rawLine['offer_id'])) {
+                    throw new RuntimeException('العرض مطلوب.');
+                }
+
+                $offer = RestaurantMenuOffer::query()
                     ->where('workspace_id', $workspace->id)
                     ->where(function ($query) use ($branch) {
                         $query->whereNull('branch_id')
@@ -38,21 +38,28 @@ class RestaurantOrderPricingService
                     })
                     ->where('is_active', true)
                     ->where('is_orderable', true)
-                    ->find($itemPayload['offer_id'] ?? null);
+                    ->where('id', $rawLine['offer_id'])
+                    ->first();
 
                 if (! $offer) {
-                    continue;
+                    throw new RuntimeException('العرض غير متاح حاليًا.');
                 }
 
-                $quantity = max(1, (int) ($itemPayload['quantity'] ?? 1));
+                $quantity = max(1, (int) ($rawLine['quantity'] ?? 1));
 
-                $unitPrice = (float) ($offer->new_price ?? $offer->old_price ?? 0);
+                $unitPrice = (float) (
+                    $offer->new_price
+    ?: $offer->old_price
+                    ?? $offer->price
+                    ?? 0
+                );
 
                 if ($unitPrice <= 0) {
-                    continue;
+                    throw new RuntimeException('سعر العرض غير صحيح.');
                 }
 
-                $currency = $offer->currency ?: 'EGP';
+                $lineTotal = $unitPrice * $quantity;
+                $currency = $offer->currency ?: $currency;
 
                 $lines[] = [
                     'line_type' => 'offer',
@@ -63,27 +70,19 @@ class RestaurantOrderPricingService
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'options_total' => 0,
-                    'line_total' => $unitPrice * $quantity,
+                    'line_total' => $lineTotal,
                     'currency' => $currency,
-                    'notes' => $itemPayload['notes'] ?? null,
-
-                    'line_type' => 'item',
+                    'notes' => $rawLine['notes'] ?? null,
                 ];
 
-                $subtotal += $unitPrice * $quantity;
+                $subtotal += $lineTotal;
 
                 continue;
             }
 
-
-
-
-
-
-
-
-
-
+            if (empty($rawLine['item_id'])) {
+                throw new RuntimeException('الصنف مطلوب.');
+            }
 
             $item = RestaurantMenuItem::query()
                 ->where('workspace_id', $workspace->id)
@@ -93,7 +92,11 @@ class RestaurantOrderPricingService
                     'activeVariants',
                     'activeOptionGroups.options',
                 ])
-                ->findOrFail($rawLine['item_id']);
+                ->find($rawLine['item_id']);
+
+            if (! $item) {
+                throw new RuntimeException('الصنف غير متاح حاليًا.');
+            }
 
             $variant = null;
 
@@ -103,12 +106,16 @@ class RestaurantOrderPricingService
                     ->where('branch_id', $branch->id)
                     ->where('item_id', $item->id)
                     ->where('is_active', true)
-                    ->findOrFail($rawLine['variant_id']);
+                    ->find($rawLine['variant_id']);
+
+                if (! $variant) {
+                    throw new RuntimeException("الاختيار السعري غير متاح للصنف {$item->name}.");
+                }
             }
 
             $selectedOptionIds = collect($rawLine['options'] ?? [])
                 ->filter()
-                ->map(fn($id) => (int) $id)
+                ->map(fn ($id) => (int) $id)
                 ->unique()
                 ->values();
 
@@ -128,14 +135,16 @@ class RestaurantOrderPricingService
                 ? (float) ($variant->sale_price ?? $variant->price)
                 : (float) ($item->sale_price ?? $item->price);
 
-            $optionsTotal = $options->sum(fn($option) => (float) $option->price);
+            $optionsTotal = $options->sum(fn ($option) => (float) $option->price);
 
             $quantity = max(1, (int) ($rawLine['quantity'] ?? 1));
             $lineTotal = ($unitPrice + $optionsTotal) * $quantity;
 
-            $currency = $variant?->currency ?: $item->currency ?: 'EGP';
+            $currency = $variant?->currency ?: $item->currency ?: $currency;
 
             $lines[] = [
+                'line_type' => 'item',
+                'offer' => null,
                 'item' => $item,
                 'variant' => $variant,
                 'options' => $options,
@@ -148,6 +157,10 @@ class RestaurantOrderPricingService
             ];
 
             $subtotal += $lineTotal;
+        }
+
+        if (empty($lines)) {
+            throw new RuntimeException('يجب إضافة صنف أو عرض واحد على الأقل.');
         }
 
         return [
@@ -186,8 +199,13 @@ class RestaurantOrderPricingService
         $groups = $item->activeOptionGroups;
 
         foreach ($groups as $group) {
-            $groupOptionIds = $group->options->pluck('id')->map(fn($id) => (int) $id);
-            $selectedInGroup = $selectedOptionIds->intersect($groupOptionIds)->count();
+            $groupOptionIds = $group->options
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id);
+
+            $selectedInGroup = $selectedOptionIds
+                ->intersect($groupOptionIds)
+                ->count();
 
             if ($group->is_required && $selectedInGroup < max(1, (int) $group->min_choices)) {
                 throw new RuntimeException("يجب اختيار {$group->name} للصنف {$item->name}.");

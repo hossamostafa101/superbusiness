@@ -1,266 +1,420 @@
-{{-- resources/views/app/restaurant-menu/dashboard/index.blade.php --}}
 @extends('app.layouts.app')
 
 @section('title', 'لوحة المطعم')
 @section('page_title', 'لوحة المطعم')
-@section('page_description', 'متابعة الطلبات والفواتير المفتوحة والتنبيهات السريعة.')
+@section('page_description', 'ملخص التشغيل والطلبات ونقطة البيع.')
 
 @section('content')
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="card content-card h-100">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="text-muted small">طلبات جديدة</div>
-                        <div class="h3 fw-bold mb-0">{{ $newOrdersCount }}</div>
-                    </div>
+<style>
+    .rm-grid {
+        display: grid;
+        gap: 16px;
+    }
 
-                    <div class="rounded-4 bg-warning bg-opacity-25 p-3">
-                        <i class="bi bi-bell fs-4 text-warning"></i>
-                    </div>
+    .rm-stats {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .rm-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .05);
+    }
+
+    .rm-stat {
+        min-height: 132px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .rm-stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: #f1f5f9;
+        color: #0f172a;
+        font-size: 20px;
+    }
+
+    .rm-stat-value {
+        font-size: 28px;
+        font-weight: 950;
+        line-height: 1;
+    }
+
+    .rm-stat-label {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .rm-actions {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .rm-action {
+        min-height: 86px;
+        border-radius: 20px;
+        padding: 14px;
+        background: #0f172a;
+        color: #fff;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: .15s ease;
+    }
+
+    .rm-action:hover {
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+    .rm-action i {
+        font-size: 22px;
+    }
+
+    .rm-action span {
+        font-weight: 900;
+    }
+
+    .rm-row {
+        display: grid;
+        grid-template-columns: 1.4fr .9fr;
+        gap: 16px;
+    }
+
+    .rm-order {
+        border: 1px solid #eef2f7;
+        border-radius: 16px;
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+
+    .rm-order:last-child {
+        margin-bottom: 0;
+    }
+
+    .rm-badge {
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .rm-status-new { background: #dbeafe; color: #1d4ed8; }
+    .rm-status-accepted { background: #dcfce7; color: #15803d; }
+    .rm-status-preparing { background: #ffedd5; color: #c2410c; }
+    .rm-status-ready { background: #fef9c3; color: #a16207; }
+    .rm-status-completed { background: #e5e7eb; color: #374151; }
+    .rm-status-cancelled { background: #fee2e2; color: #b91c1c; }
+
+    @media (max-width: 1200px) {
+        .rm-stats,
+        .rm-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .rm-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .rm-stats,
+        .rm-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="rm-grid">
+    <div class="rm-actions">
+        @if(\Illuminate\Support\Facades\Route::has('app.restaurant-menu.pos.index'))
+            <a href="{{ route('app.restaurant-menu.pos.index', $workspace) }}" class="rm-action">
+                <i class="bi bi-calculator"></i>
+                <span>فتح POS</span>
+            </a>
+        @endif
+
+        <a href="{{ route('app.restaurant-menu.orders.index', $workspace) }}" class="rm-action">
+            <i class="bi bi-receipt"></i>
+            <span>إدارة الطلبات</span>
+        </a>
+
+        <a href="{{ route('app.restaurant-menu.items.index', $workspace) }}" class="rm-action">
+            <i class="bi bi-cup-hot"></i>
+            <span>إضافة صنف</span>
+        </a>
+
+        @if($defaultBranch)
+            <a href="{{ route('public.restaurant-menu.branch', [$workspace, $defaultBranch]) }}" target="_blank" class="rm-action">
+                <i class="bi bi-box-arrow-up-left"></i>
+                <span>فتح المنيو</span>
+            </a>
+        @else
+            <a href="{{ route('app.restaurant-menu.branches.index', $workspace) }}" class="rm-action">
+                <i class="bi bi-shop"></i>
+                <span>إضافة فرع</span>
+            </a>
+        @endif
+    </div>
+
+    <div class="rm-grid rm-stats">
+        <div class="rm-card rm-stat">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="rm-stat-icon">
+                    <i class="bi bi-cash-stack"></i>
                 </div>
 
-                <a href="{{ route('app.restaurant-menu.orders.index', ['workspace' => $workspace, 'status' => 'new']) }}"
-                   class="btn btn-sm btn-outline-dark mt-3">
-                    عرض الطلبات
-                </a>
+                @if(!is_null($salesChangePercent))
+                    <span class="badge {{ $salesChangePercent >= 0 ? 'bg-success' : 'bg-danger' }}">
+                        {{ $salesChangePercent >= 0 ? '+' : '' }}{{ $salesChangePercent }}%
+                    </span>
+                @endif
+            </div>
+
+            <div>
+                <div class="rm-stat-value">
+                    {{ number_format((float) $todaySalesTotal, 2) }}
+                </div>
+                <div class="rm-stat-label">مبيعات اليوم</div>
+            </div>
+        </div>
+
+        <div class="rm-card rm-stat">
+            <div class="rm-stat-icon">
+                <i class="bi bi-bag-check"></i>
+            </div>
+
+            <div>
+                <div class="rm-stat-value">{{ $todayOrdersCount }}</div>
+                <div class="rm-stat-label">طلبات اليوم</div>
+            </div>
+        </div>
+
+        <div class="rm-card rm-stat">
+            <div class="rm-stat-icon">
+                <i class="bi bi-lightning-charge"></i>
+            </div>
+
+            <div>
+                <div class="rm-stat-value">{{ $activeOrdersCount }}</div>
+                <div class="rm-stat-label">طلبات نشطة</div>
+            </div>
+        </div>
+
+        <div class="rm-card rm-stat">
+            <div class="rm-stat-icon">
+                <i class="bi bi-clock-history"></i>
+            </div>
+
+            <div>
+                <div class="rm-stat-value">{{ $openShiftsCount }}</div>
+                <div class="rm-stat-label">شيفتات مفتوحة</div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-3">
-        <div class="card content-card h-100">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="text-muted small">فواتير مفتوحة</div>
-                        <div class="h3 fw-bold mb-0">{{ $openInvoicesCount }}</div>
-                    </div>
-
-                    <div class="rounded-4 bg-success bg-opacity-25 p-3">
-                        <i class="bi bi-journal-text fs-4 text-success"></i>
-                    </div>
-                </div>
-
-                <a href="{{ route('app.restaurant-menu.invoices.index', ['workspace' => $workspace, 'status' => 'open']) }}"
-                   class="btn btn-sm btn-outline-success mt-3">
-                    عرض الفواتير
-                </a>
+    <div class="rm-grid rm-stats">
+        <a href="{{ route('app.restaurant-menu.orders.index', [$workspace, 'status' => 'new']) }}" class="rm-card text-decoration-none text-dark">
+            <div class="d-flex justify-content-between">
+                <strong>طلبات جديدة</strong>
+                <span class="rm-badge rm-status-new">{{ $newOrdersCount }}</span>
             </div>
-        </div>
+        </a>
+
+        <a href="{{ route('app.restaurant-menu.orders.index', [$workspace, 'status' => 'accepted']) }}" class="rm-card text-decoration-none text-dark">
+            <div class="d-flex justify-content-between">
+                <strong>مقبولة</strong>
+                <span class="rm-badge rm-status-accepted">{{ $acceptedOrdersCount }}</span>
+            </div>
+        </a>
+
+        <a href="{{ route('app.restaurant-menu.orders.index', [$workspace, 'status' => 'preparing']) }}" class="rm-card text-decoration-none text-dark">
+            <div class="d-flex justify-content-between">
+                <strong>قيد التحضير</strong>
+                <span class="rm-badge rm-status-preparing">{{ $preparingOrdersCount }}</span>
+            </div>
+        </a>
+
+        <a href="{{ route('app.restaurant-menu.orders.index', [$workspace, 'status' => 'ready']) }}" class="rm-card text-decoration-none text-dark">
+            <div class="d-flex justify-content-between">
+                <strong>جاهزة</strong>
+                <span class="rm-badge rm-status-ready">{{ $readyOrdersCount }}</span>
+            </div>
+        </a>
     </div>
 
-    <div class="col-md-3">
-        <div class="card content-card h-100">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="text-muted small">تنتهي خلال 10 دقائق</div>
-                        <div class="h3 fw-bold mb-0">{{ $endingSoonInvoicesCount }}</div>
-                    </div>
-
-                    <div class="rounded-4 bg-info bg-opacity-25 p-3">
-                        <i class="bi bi-hourglass-split fs-4 text-info"></i>
-                    </div>
+    @if($openInvoiceEnabled)
+        <div class="rm-grid rm-stats">
+            <div class="rm-card">
+                <div class="d-flex justify-content-between">
+                    <strong>جلسات مفتوحة</strong>
+                    <span class="badge bg-primary">{{ $openInvoicesCount }}</span>
                 </div>
-
-                <a href="{{ route('app.restaurant-menu.invoices.index', ['workspace' => $workspace, 'status' => 'open']) }}"
-                   class="btn btn-sm btn-outline-info mt-3">
-                    متابعة
-                </a>
             </div>
-        </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="card content-card h-100">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="text-muted small">طلبات اليوم</div>
-                        <div class="h3 fw-bold mb-0">{{ $todayOrdersCount }}</div>
-                    </div>
-
-                    <div class="rounded-4 bg-primary bg-opacity-25 p-3">
-                        <i class="bi bi-receipt fs-4 text-primary"></i>
-                    </div>
+            <div class="rm-card">
+                <div class="d-flex justify-content-between">
+                    <strong>تنتهي قريبًا</strong>
+                    <span class="badge bg-warning text-dark">{{ $endingSoonInvoicesCount }}</span>
                 </div>
+            </div>
 
-                <div class="small text-muted mt-3">
-                    إجمالي اليوم:
-                    <strong>
-                        {{ number_format((float) $todaySalesTotal, 2) }}
-                    </strong>
+            <div class="rm-card">
+                <div class="d-flex justify-content-between">
+                    <strong>منتهية</strong>
+                    <span class="badge bg-danger">{{ $expiredOpenInvoicesCount }}</span>
+                </div>
+            </div>
+
+            <div class="rm-card">
+                <div class="d-flex justify-content-between">
+                    <strong>طلبات خدمة</strong>
+                    <span class="badge bg-dark">{{ $pendingServiceRequestsCount }}</span>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    @else
+        <div class="rm-card">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h2 class="h6 fw-bold mb-1">نظام جلسات الطاولات غير مفعل</h2>
+                    <p class="text-muted mb-0">
+                        الداشبورد يعمل حاليًا بنظام الطلبات العادية. يمكن تفعيل جلسات الطاولات من الإعدادات عند الحاجة.
+                    </p>
+                </div>
 
-@if($expiredOpenInvoicesCount > 0)
-    <div class="alert alert-warning rounded-4">
-        يوجد
-        <strong>{{ $expiredOpenInvoicesCount }}</strong>
-        فواتير انتهت مدتها وما زالت حالتها مفتوحة.
-        شغّل أمر انتهاء الفواتير أو راجع إعدادات الـ Cron Job.
-    </div>
-@endif
-
-<div class="row g-4">
-    <div class="col-lg-6">
-        <div class="card content-card h-100">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0">آخر الطلبات</h5>
-
-                    <a href="{{ route('app.restaurant-menu.orders.index', $workspace) }}" class="btn btn-sm btn-light">
-                        الكل
+                @if(\Illuminate\Support\Facades\Route::has('app.restaurant-menu.settings.index'))
+                    <a href="{{ route('app.restaurant-menu.settings.index', [$workspace, 'tab' => 'pos']) }}" class="btn btn-outline-dark">
+                        الإعدادات
                     </a>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr>
-                                <th>الطلب</th>
-                                <th>العميل</th>
-                                <th>الحالة</th>
-                                <th>الإجمالي</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @forelse($latestOrders as $order)
-                                <tr>
-                                    <td>
-                                        <strong>#{{ $order->order_number }}</strong>
-                                        <div class="small text-muted">
-                                            {{ $order->created_at?->format('H:i') }}
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        {{ $order->customer_name ?: 'عميل' }}
-                                    </td>
-
-                                    <td>
-                                        <span class="badge {{ $order->statusBadgeClass() }}">
-                                            {{ $order->statusLabel() }}
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        {{ number_format((float) $order->total, 2) }}
-                                        {{ $order->currency }}
-                                    </td>
-
-                                    <td class="text-end">
-                                        <a href="{{ route('app.restaurant-menu.orders.show', [$workspace, $order]) }}"
-                                           class="btn btn-sm btn-outline-primary">
-                                            عرض
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-4">
-                                        لا توجد طلبات بعد.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                @endif
             </div>
         </div>
-    </div>
+    @endif
 
-    <div class="col-lg-6">
-        <div class="card content-card h-100">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0">آخر الفواتير المفتوحة</h5>
+    <div class="rm-row">
+        <div class="rm-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 fw-bold mb-0">آخر الطلبات</h2>
 
-                    <a href="{{ route('app.restaurant-menu.invoices.index', $workspace) }}" class="btn btn-sm btn-light">
-                        الكل
-                    </a>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr>
-                                <th>الفاتورة</th>
-                                <th>الطاولة</th>
-                                <th>تنتهي</th>
-                                <th>الإجمالي</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @forelse($latestOpenInvoices as $invoice)
-                                <tr>
-                                    <td>
-                                        <strong>#{{ $invoice->invoice_number }}</strong>
-                                        <div class="small text-muted">
-                                            {{ $invoice->opened_by_name ?: '-' }}
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        {{ $invoice->table?->name ?: ($invoice->table_number ?: '-') }}
-                                    </td>
-
-                                    <td>
-                                        @if($invoice->expires_at)
-                                            <div>{{ $invoice->expires_at->format('H:i') }}</div>
-                                            <small class="text-muted">
-                                                {{ $invoice->expires_at->diffForHumans() }}
-                                            </small>
-                                        @else
-                                            -
-                                        @endif
-                                    </td>
-
-                                    <td>
-                                        {{ number_format((float) $invoice->total, 2) }}
-                                        {{ $invoice->currency }}
-                                    </td>
-
-                                    <td class="text-end">
-                                        <a href="{{ route('app.restaurant-menu.invoices.show', [$workspace, $invoice]) }}"
-                                           class="btn btn-sm btn-outline-primary">
-                                            عرض
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-4">
-                                        لا توجد فواتير مفتوحة.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
+                <a href="{{ route('app.restaurant-menu.orders.index', $workspace) }}" class="btn btn-sm btn-outline-dark">
+                    عرض الكل
+                </a>
             </div>
+
+            @forelse($latestOrders as $order)
+                @php
+                    $statusClass = 'rm-status-' . $order->status;
+                @endphp
+
+                <div class="rm-order">
+                    <div class="d-flex justify-content-between gap-2">
+                        <div>
+                            <strong>#{{ $order->order_number }}</strong>
+
+                            <div class="small text-muted">
+                                {{ $order->branch?->name ?? '—' }}
+                                ·
+                                {{ $order->created_at?->format('H:i') }}
+                                ·
+                                {{ $order->items_count }} صنف
+                            </div>
+                        </div>
+
+                        <span class="rm-badge {{ $statusClass }}">
+                            {{ $order->status }}
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <strong>
+                            {{ number_format((float) $order->total, 2) }}
+                            {{ $order->currency }}
+                        </strong>
+
+                        <a href="{{ route('app.restaurant-menu.orders.show', [$workspace, $order]) }}" class="btn btn-sm btn-light">
+                            التفاصيل
+                        </a>
+                    </div>
+                </div>
+            @empty
+                <div class="text-center text-muted py-4">
+                    لا توجد طلبات بعد.
+                </div>
+            @endforelse
+        </div>
+
+        <div class="rm-grid">
+            <div class="rm-card">
+                <h2 class="h5 fw-bold mb-3">ملخص المنيو</h2>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span>الفروع</span>
+                    <strong>{{ $branchesCount }}</strong>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span>الأصناف</span>
+                    <strong>{{ $itemsCount }}</strong>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>الأصناف المتاحة</span>
+                    <strong>{{ $availableItemsCount }}</strong>
+                </div>
+            </div>
+
+            <div class="rm-card">
+                <h2 class="h5 fw-bold mb-3">تشغيل اليوم</h2>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span>طلبات مكتملة</span>
+                    <strong>{{ $completedTodayOrdersCount }}</strong>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span>طلبات ملغاة</span>
+                    <strong>{{ $cancelledTodayOrdersCount }}</strong>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>طلبات خدمة</span>
+                    <strong>{{ $pendingServiceRequestsCount }}</strong>
+                </div>
+            </div>
+
+            @if($latestOpenShifts->count())
+                <div class="rm-card">
+                    <h2 class="h5 fw-bold mb-3">الشيفتات المفتوحة</h2>
+
+                    @foreach($latestOpenShifts as $shift)
+                        <div class="border rounded-4 p-2 mb-2">
+                            <strong>#{{ $shift->id }}</strong>
+
+                            <div class="small text-muted">
+                                {{ $shift->branch?->name ?? '—' }}
+                                @if($shift->register)
+                                    · {{ $shift->register->name }}
+                                @endif
+                                @if($shift->staff)
+                                    · {{ $shift->staff->name }}
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </div>
 </div>
 @endsection
-
-
-
-
-{{-- @push('scripts')
-<script>
-    setTimeout(function () {
-        window.location.reload();
-    }, 30000);
-</script>
-@endpush --}}

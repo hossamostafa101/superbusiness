@@ -18,10 +18,13 @@ class Workspace extends Model
         'type',
         'status',
         'trial_ends_at',
+    'onboarding_step',
+    'onboarding_completed_at',
     ];
 
     protected $casts = [
         'trial_ends_at' => 'datetime',
+    'onboarding_completed_at' => 'datetime',
     ];
 
     public function owner(): BelongsTo
@@ -58,6 +61,7 @@ class Workspace extends Model
         return $this->status === 'active';
     }
 
+    
 
     public function businessProfile()
 {
@@ -480,5 +484,156 @@ public function medicalPrescriptions()
 public function medicalPrescriptionItems()
 {
     return $this->hasMany(\Modules\Medical\Models\MedicalPrescriptionItem::class);
+}
+
+
+
+
+
+
+
+
+
+
+
+public function restaurantPaymentMethods()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantPaymentMethod::class);
+}
+
+public function activeRestaurantPaymentMethods()
+{
+    return $this->restaurantPaymentMethods()
+        ->where('is_active', true)
+        ->orderByDesc('is_default')
+        ->orderBy('sort_order')
+        ->orderBy('id');
+}
+
+public function restaurantStaff()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantStaff::class);
+}
+
+public function activeRestaurantStaff()
+{
+    return $this->restaurantStaff()
+        ->where('is_active', true)
+        ->orderBy('name');
+}
+
+public function restaurantPosSettings()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantPosSetting::class);
+}
+
+
+
+
+
+
+
+
+public function restaurantCashRegisters()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantCashRegister::class);
+}
+
+public function activeRestaurantCashRegisters()
+{
+    return $this->restaurantCashRegisters()
+        ->where('is_active', true)
+        ->orderBy('name');
+}
+
+public function restaurantPosShifts()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantPosShift::class);
+}
+
+public function openRestaurantPosShifts()
+{
+    return $this->restaurantPosShifts()
+        ->where('status', 'open')
+        ->latest('opened_at');
+}
+
+
+
+
+
+
+
+
+public function customerAccounts()
+{
+    return $this->hasMany(\App\Models\WorkspaceCustomerAccount::class);
+}
+
+public function customerAddresses()
+{
+    return $this->hasMany(\App\Models\WorkspaceCustomerAddress::class);
+}
+
+
+
+
+
+
+public function restaurantMenuPwaSettings()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantMenuPwaSetting::class);
+}
+
+
+
+
+
+
+
+
+public function restaurantDeliveryZones()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantDeliveryZone::class);
+}
+
+public function activeRestaurantDeliveryZones()
+{
+    return $this->restaurantDeliveryZones()
+        ->where('is_active', true)
+        ->orderBy('sort_order')
+        ->orderBy('name');
+}
+
+public function restaurantDeliveryCouriers()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantDeliveryCourier::class);
+}
+
+public function activeRestaurantDeliveryCouriers()
+{
+    return $this->restaurantDeliveryCouriers()
+        ->where('is_active', true)
+        ->orderBy('name');
+}
+
+public function restaurantDeliverySettings()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantDeliverySetting::class);
+}
+
+
+
+
+
+
+public function affiliateReferrals()
+{
+    return $this->hasMany(\Modules\Affiliate\Models\AffiliateReferral::class);
+}
+
+public function affiliateCommissions()
+{
+    return $this->hasMany(\Modules\Affiliate\Models\AffiliateCommission::class);
 }
 }

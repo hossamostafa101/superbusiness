@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantBranchController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantCashRegisterController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantDeliveryCourierController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantDeliverySettingController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantDeliveryZoneController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantInvoiceController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantItemOptionController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantItemOptionGroupController;
@@ -11,22 +15,32 @@ use App\Http\Controllers\App\RestaurantMenu\RestaurantMenuContentSectionControll
 use App\Http\Controllers\App\RestaurantMenu\RestaurantMenuDashboardController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantMenuItemController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantMenuOfferController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantMenuPwaSettingController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantMenuSettingsController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantMenuThemeController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantOrderController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantPaymentMethodController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantPosController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantPosCustomerController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantPosSettingController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantPosShiftController;
+use App\Http\Controllers\App\RestaurantMenu\RestaurantStaffController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantTableController;
 use App\Http\Controllers\App\RestaurantMenu\RestaurantTableServiceRequestController;
+use App\Http\Controllers\Public\RestaurantMenu\PublicCustomerAccountController;
 use App\Http\Controllers\Public\RestaurantMenu\PublicRestaurantInvoiceController;
 use App\Http\Controllers\Public\RestaurantMenu\PublicRestaurantMenuController;
+use App\Http\Controllers\Public\RestaurantMenu\PublicRestaurantMenuPwaController;
 use App\Http\Controllers\Public\RestaurantMenu\PublicRestaurantOrderController;
 use App\Http\Controllers\Public\RestaurantMenu\PublicRestaurantTableServiceRequestController;
 
 Route::middleware(['auth:web', 'workspace.access', 'workspace.specification:restaurant'])
-    ->prefix('superbusiness/app/{workspace:slug}/restaurant-menu')
+    ->prefix('app/{workspace:slug}/restaurant-menu')
     ->name('app.restaurant-menu.')
     ->group(function () {
         Route::get('/', function (\App\Models\Workspace $workspace) {
-            return redirect()->route('app.restaurant-menu.branches.index', $workspace);
+            // return redirect()->route('app.restaurant-menu.branches.index', $workspace);
+            return redirect()->route('app.restaurant-menu.dashboard', $workspace);
         })->name('dashboardx');
 
         Route::get('dashboard', RestaurantMenuDashboardController::class)
@@ -115,6 +129,31 @@ Route::delete('content-sections/{contentSection}/offers/{offer}', [RestaurantMen
 
             
 
+
+            Route::get('orders/{restaurantOrder}/edit', [RestaurantOrderController::class, 'edit'])
+    ->name('orders.edit');
+
+Route::put('orders/{restaurantOrder}', [RestaurantOrderController::class, 'update'])
+    ->name('orders.update');
+
+
+    Route::put('orders/{restaurantOrder}/items', [RestaurantOrderController::class, 'updateItems'])
+    ->name('orders.update-items');
+
+Route::post('orders/{restaurantOrder}/items', [RestaurantOrderController::class, 'storeItem'])
+    ->name('orders.items.store');
+    
+
+Route::patch('orders/{restaurantOrder}/cancel', [RestaurantOrderController::class, 'cancel'])
+    ->name('orders.cancel');
+
+
+
+    
+
+            Route::patch('orders/{restaurantOrder}/delivery', [RestaurantOrderController::class, 'updateDelivery'])
+    ->name('orders.update-delivery');
+    
         Route::get('orders', [RestaurantOrderController::class, 'index'])
             ->name('orders.index');
 
@@ -196,6 +235,107 @@ Route::put('settings', [RestaurantMenuSettingsController::class, 'update'])
 
 
 
+
+
+
+
+    Route::resource('payment-methods', RestaurantPaymentMethodController::class)
+    ->except(['show'])
+    ->names('payment-methods');
+
+Route::resource('staff', RestaurantStaffController::class)
+    ->except(['show'])
+    ->names('staff');
+
+Route::get('pos-settings', [RestaurantPosSettingController::class, 'edit'])
+    ->name('pos-settings.edit');
+
+Route::put('pos-settings', [RestaurantPosSettingController::class, 'update'])
+    ->name('pos-settings.update');
+
+    
+
+
+
+
+
+    Route::resource('cash-registers', RestaurantCashRegisterController::class)
+    ->except(['show'])
+    ->names('cash-registers');
+
+Route::get('pos-shifts', [RestaurantPosShiftController::class, 'index'])
+    ->name('pos-shifts.index');
+
+Route::get('pos-shifts/create', [RestaurantPosShiftController::class, 'create'])
+    ->name('pos-shifts.create');
+
+Route::post('pos-shifts', [RestaurantPosShiftController::class, 'store'])
+    ->name('pos-shifts.store');
+
+Route::get('pos-shifts/{shift}', [RestaurantPosShiftController::class, 'show'])
+    ->name('pos-shifts.show');
+
+Route::patch('pos-shifts/{shift}/close', [RestaurantPosShiftController::class, 'close'])
+    ->name('pos-shifts.close');
+
+
+
+Route::get('pos', [RestaurantPosController::class, 'index'])
+    ->name('pos.index');
+
+Route::post('pos/orders', [RestaurantPosController::class, 'store'])
+    ->name('pos.orders.store');
+
+
+
+
+
+    Route::get('pwa-settings', [RestaurantMenuPwaSettingController::class, 'edit'])
+    ->name('pwa-settings.edit');
+
+Route::put('pwa-settings', [RestaurantMenuPwaSettingController::class, 'update'])
+    ->name('pwa-settings.update');
+
+
+
+
+
+
+
+
+
+
+
+
+    Route::resource('delivery-zones', RestaurantDeliveryZoneController::class)
+    ->except(['show'])
+    ->names('delivery-zones');
+
+Route::resource('delivery-couriers', RestaurantDeliveryCourierController::class)
+    ->except(['show'])
+    ->names('delivery-couriers');
+
+Route::get('delivery-settings', [RestaurantDeliverySettingController::class, 'edit'])
+    ->name('delivery-settings.edit');
+
+Route::put('delivery-settings', [RestaurantDeliverySettingController::class, 'update'])
+    ->name('delivery-settings.update');
+
+
+
+
+
+
+
+
+
+    Route::get('pos/customers/search', [RestaurantPosCustomerController::class, 'search'])
+    ->name('pos.customers.search');
+
+Route::get('pos/customers/{customer}', [RestaurantPosCustomerController::class, 'show'])
+    ->name('pos.customers.show');
+    
+
     
     });
 
@@ -240,3 +380,37 @@ Route::get('menu/{workspace:slug}/{branch:slug}/orders/{restaurantOrder}/status'
 
     Route::get('menu/{workspace:slug}/{branch:slug}/offers', [PublicRestaurantMenuController::class, 'offers'])
     ->name('public.restaurant-menu.offers');
+
+
+
+
+
+
+    Route::get('menu/{workspace:slug}/{branch:slug}/account', [PublicCustomerAccountController::class, 'dashboard'])
+    ->name('public.restaurant-menu.customer.dashboard');
+
+Route::get('menu/{workspace:slug}/{branch:slug}/login', [PublicCustomerAccountController::class, 'loginForm'])
+    ->name('public.restaurant-menu.customer.login');
+
+Route::post('menu/{workspace:slug}/{branch:slug}/login', [PublicCustomerAccountController::class, 'login'])
+    ->name('public.restaurant-menu.customer.login.submit');
+
+Route::get('menu/{workspace:slug}/{branch:slug}/register', [PublicCustomerAccountController::class, 'registerForm'])
+    ->name('public.restaurant-menu.customer.register');
+
+Route::post('menu/{workspace:slug}/{branch:slug}/register', [PublicCustomerAccountController::class, 'register'])
+    ->name('public.restaurant-menu.customer.register.submit');
+
+Route::post('menu/{workspace:slug}/{branch:slug}/logout', [PublicCustomerAccountController::class, 'logout'])
+    ->name('public.restaurant-menu.customer.logout');
+
+
+
+
+
+
+Route::get('menu/{workspace:slug}/{branch:slug}/manifest.webmanifest', [PublicRestaurantMenuPwaController::class, 'manifest'])
+    ->name('public.restaurant-menu.pwa.manifest');
+
+Route::get('menu/{workspace:slug}/{branch:slug}/offline', [PublicRestaurantMenuPwaController::class, 'offline'])
+    ->name('public.restaurant-menu.pwa.offline');

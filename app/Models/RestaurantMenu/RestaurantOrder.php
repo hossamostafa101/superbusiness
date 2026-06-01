@@ -32,7 +32,6 @@ class RestaurantOrder extends Model
 
         'subtotal',
         'discount_total',
-        'delivery_fee',
         'tax_total',
         'total',
         'currency',
@@ -47,6 +46,35 @@ class RestaurantOrder extends Model
         'accepted_at',
         'completed_at',
         'cancelled_at',
+
+'cashier_id',
+'shift_id',
+'paid_at',
+'pos_notes',
+
+'customer_account_id',
+'customer_address_id',
+
+
+
+
+
+'delivery_zone_id',
+'delivery_courier_id',
+'delivery_fee',
+'delivery_fee_included_in_total',
+'show_delivery_fee_on_receipt',
+'delivery_fee_payment_target',
+'delivery_status',
+'delivery_courier_name',
+'delivery_courier_phone',
+'delivery_company_name',
+'delivery_address_details',
+'delivery_area',
+'delivery_building',
+'delivery_floor',
+'delivery_apartment',
+'delivery_landmark',
     ];
 
     protected $casts = [
@@ -59,6 +87,10 @@ class RestaurantOrder extends Model
         'accepted_at' => 'datetime',
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'paid_at' => 'datetime',
+
+'delivery_fee_included_in_total' => 'boolean',
+'show_delivery_fee_on_receipt' => 'boolean',
     ];
 
     public function workspace(): BelongsTo
@@ -187,4 +219,121 @@ public function invoice(): BelongsTo
 {
     return $this->belongsTo(RestaurantInvoice::class, 'invoice_id');
 }
+
+
+
+
+
+
+
+public function payments()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantOrderPayment::class, 'order_id');
+}
+
+public function shift()
+{
+    return $this->belongsTo(\App\Models\RestaurantMenu\RestaurantPosShift::class, 'shift_id');
+}
+
+public function cashier()
+{
+    return $this->belongsTo(\App\Models\RestaurantMenu\RestaurantStaff::class, 'cashier_id');
+}
+
+
+
+
+
+
+public function customerAccount()
+{
+    return $this->belongsTo(\App\Models\WorkspaceCustomerAccount::class, 'customer_account_id');
+}
+
+public function customerAddress()
+{
+    return $this->belongsTo(\App\Models\WorkspaceCustomerAddress::class, 'customer_address_id');
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+public function deliveryZone()
+{
+    return $this->belongsTo(\App\Models\RestaurantMenu\RestaurantDeliveryZone::class, 'delivery_zone_id');
+}
+
+public function deliveryCourier()
+{
+    return $this->belongsTo(\App\Models\RestaurantMenu\RestaurantDeliveryCourier::class, 'delivery_courier_id');
+}
+
+
+
+
+
+
+
+
+
+
+
+public function isDeliveryOrder(): bool
+{
+    return $this->order_type === 'delivery';
+}
+
+public function shouldShowDeliveryFeeOnReceipt(): bool
+{
+    return $this->isDeliveryOrder()
+        && (float) $this->delivery_fee > 0
+        && (bool) $this->show_delivery_fee_on_receipt;
+}
+
+public function deliveryStatusLabel(): string
+{
+    return match ($this->delivery_status) {
+        'not_assigned' => 'لم يتم التعيين',
+        'assigned' => 'تم التعيين',
+        'picked_up' => 'تم الاستلام من المطعم',
+        'on_the_way' => 'في الطريق',
+        'delivered' => 'تم التسليم',
+        'failed' => 'فشل التوصيل',
+        default => $this->delivery_status ?: '—',
+    };
+}
+
+public function deliveryFeeTargetLabel(): string
+{
+    return match ($this->delivery_fee_payment_target) {
+        'restaurant' => 'المطعم',
+        'courier' => 'الدليفري',
+        'external_company' => 'شركة خارجية',
+        default => $this->delivery_fee_payment_target ?: '—',
+    };
+}
+
+
+
+public function events()
+{
+    return $this->hasMany(\App\Models\RestaurantMenu\RestaurantOrderEvent::class, 'order_id');
+}
+
+
+
+
+
+
+
 }

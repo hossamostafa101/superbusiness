@@ -122,6 +122,38 @@
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet">
 
+
+
+
+
+
+        <link rel="manifest" href="{{ route('public.restaurant-menu.pwa.manifest', [$workspace, $branch]) }}">
+
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="{{ $workspace->businessProfile?->display_name ?: $workspace->name }}">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+@if($workspace->businessProfile?->logo)
+    @php
+        $appleIcon = str_starts_with($workspace->businessProfile->logo, 'http')
+            ? $workspace->businessProfile->logo
+            : asset('storage/' . $workspace->businessProfile->logo);
+    @endphp
+
+    <link rel="apple-touch-icon" href="{{ $appleIcon }}">
+@endif
+
+
+
+
+
+
+
+
+
+
     <style>
         /* :root {
             --theme-color: {{ $themeColor }};
@@ -3444,6 +3476,142 @@
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        .od-account-btn {
+    min-width: 36px;
+    height: 34px;
+    border-radius: 999px;
+    display: inline-grid;
+    place-items: center;
+    background: rgba(0, 0, 0, .38);
+    color: #fff;
+    text-decoration: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .16);
+}
+
+.od-account-btn:hover {
+    color: #fff;
+    background: rgba(0, 0, 0, .5);
+}
+
+
+
+
+
+
+
+
+
+.od-ios-install-hint {
+    position: fixed;
+    right: 14px;
+    left: 14px;
+    bottom: 86px;
+    z-index: 999;
+    border-radius: 20px;
+    padding: 12px 42px 12px 14px;
+    background: rgba(17, 24, 39, .94);
+    color: #fff;
+    box-shadow: 0 16px 34px rgba(15, 23, 42, .24);
+    font-size: 13px;
+}
+
+.od-ios-install-hint strong {
+    display: block;
+    font-weight: 900;
+    margin-bottom: 3px;
+}
+
+.od-ios-install-hint span {
+    opacity: .85;
+}
+
+.od-ios-install-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .16);
+    color: #fff;
+}
+
+
+
+
+
+
+.od-delivery-fields {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 18px;
+    background: rgba(245, 241, 234, .72);
+    border: 1px solid rgba(31, 23, 19, .08);
+}
+
+.od-field {
+    margin-bottom: 10px;
+}
+
+.od-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 6px;
+    color: #3b2f2a;
+}
+
+.od-input {
+    width: 100%;
+    min-height: 42px;
+    border-radius: 14px;
+    border: 1px solid rgba(31, 23, 19, .12);
+    background: #fff;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.od-address-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.od-help {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.od-error {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #dc2626;
+}
+
+@media (max-width: 480px) {
+    .od-address-grid {
+        grid-template-columns: 1fr;
+    }
+}
     </style>
     @if (!empty($menuTheme['custom_css']))
         {!! $menuTheme['custom_css'] !!}
@@ -3453,12 +3621,7 @@
 <body>
 
     <div class="menu-wrapper">
-        {{-- @if (request()->filled('preview_template') || request()->boolean('theme_preview'))
-    <div class="alert alert-warning rounded-4">
-        أنت تشاهد معاينة مؤقتة للتصميم، ولم يتم حفظ هذه التغييرات بعد.
-    </div>
-@endif --}}
-
+    
         @if (request()->filled('preview_template') ||
                 request()->boolean('theme_preview') ||
                 request()->boolean('content_section_preview'))
@@ -3475,6 +3638,16 @@
 
         @include('public.restaurant-menu.templates.sections.content-sections.index')
 
+        <div id="iosInstallHint" class="od-ios-install-hint" style="display:none;">
+    <button type="button" class="od-ios-install-close" onclick="this.parentElement.style.display='none'">
+        ×
+    </button>
+
+    <strong>تثبيت المنيو</strong>
+    <span>
+        من زر المشاركة في Safari اختر Add to Home Screen.
+    </span>
+</div>
         @include($menuTheme['views']['category_tabs'])
 
         @include($menuTheme['views']['items'])
@@ -3482,58 +3655,19 @@
         @include($menuTheme['views']['footer'])
     </div>
 
-    {{-- <div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
-            <div class="modal-content">
-                <div id="modalImageWrap"></div>
-
-                <div class="modal-body p-4">
-                    <div class="d-flex justify-content-between gap-3 align-items-start mb-2">
-                        <div>
-                            <h3 class="h5 fw-bold mb-1" id="modalTitle"></h3>
-                            <p class="text-muted small mb-0" id="modalDescription"></p>
-                        </div>
-
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                    </div>
-
-                    <div class="d-flex gap-2 flex-wrap small text-muted mb-3" id="modalMeta"></div>
-
-                    <div class="border rounded-4 p-3 mb-3">
-                        <div class="small text-muted">السعر</div>
-                        <div class="h5 fw-bold mb-0" id="modalPrice"></div>
-                        <div class="old-price" id="modalOldPrice"></div>
-                    </div>
-
-                    <div id="modalVariants"></div>
-                    <div id="modalOptionGroups"></div>
-
-                    <div class="mb-3">
-                        <label class="form-label">الكمية</label>
-                        <div class="d-flex gap-2 align-items-center">
-                            <button type="button" class="btn btn-light border" id="qtyMinus">-</button>
-                            <input type="number" id="modalQty" value="1" min="1" max="100"
-                                class="form-control text-center" style="max-width: 90px;">
-                            <button type="button" class="btn btn-light border" id="qtyPlus">+</button>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">ملاحظات على الصنف</label>
-                        <textarea id="modalItemNotes" class="form-control" rows="2" placeholder="مثال: بدون بصل، زيادة صوص"></textarea>
-                    </div>
-
-                    <button type="button" class="btn btn-main w-100 mt-2" id="addToCartBtn">
-                        إضافة إلى الطلب
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div> --}}
+ 
 
     @include($menuTheme['views']['cart'])
     @include($menuTheme['views']['item_modal'])
+
+
+
+    <button type="button" id="installPwaBtn" class="od-install-pwa-btn" style="display:none;">
+    <i class="bi bi-phone"></i>
+    تثبيت المنيو
+</button>
+
+
 
     <div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
@@ -3567,12 +3701,20 @@
 
                     <div id="cartItemsWrap" class="mb-3"></div>
 
-                    <div class="border rounded-4 p-3 mb-3">
+                    {{-- <div class="border rounded-4 p-3 mb-3">
                         <div class="d-flex justify-content-between">
                             <span>الإجمالي</span>
                             <strong id="cartModalTotal">0.00</strong>
                         </div>
-                    </div>
+                    </div> --}}
+<div class="border rounded-4 p-3 mb-3">
+    <div id="deliverySummary" class="small text-muted mb-2" style="display:none;"></div>
+
+    <div class="d-flex justify-content-between">
+        <span>الإجمالي</span>
+        <strong id="cartModalTotal">0.00</strong>
+    </div>
+</div>
 
                     <form method="POST"
                         action="{{ route('public.restaurant-menu.orders.store', [$workspace, $branch]) }}"
@@ -3625,11 +3767,7 @@
                             </select>
 
 
-                            {{-- <select name="order_type" id="orderType" class="form-select" required>
-                                <option value="takeaway" @selected(old('order_type') === 'takeaway' && empty($selectedTable))>تيك أواي</option>
-                                <option value="dine_in" @selected(old('order_type', !empty($selectedTable) ? 'dine_in' : null) === 'dine_in')>داخل المكان</option>
-                                <option value="delivery" @selected(old('order_type') === 'delivery')>دليفري</option>
-                            </select> --}}
+                        
                         </div>
 
                         <div class="mb-3" id="tableNumberWrap" style="display:none;">
@@ -3648,6 +3786,109 @@
                             <label class="form-label">عنوان التوصيل</label>
                             <textarea name="delivery_address" rows="3" class="form-control" placeholder="اكتب العنوان بالتفصيل">{{ old('delivery_address') }}</textarea>
                         </div>
+
+                        <div id="deliveryFields" class="od-delivery-fields" style="display:none;">
+    <div class="od-field">
+        <label class="od-label">
+            منطقة التوصيل
+        </label>
+
+        <select name="delivery_zone_id" id="deliveryZoneSelect" class="od-input">
+            <option value="">اختر منطقة التوصيل</option>
+
+            @foreach($deliveryZones as $zone)
+                <option
+                    value="{{ $zone->id }}"
+                    data-fee="{{ (float) $zone->delivery_fee }}"
+                    data-min-order="{{ $zone->min_order_amount !== null ? (float) $zone->min_order_amount : '' }}"
+                    data-estimated="{{ $zone->estimated_minutes }}"
+                    @selected(old('delivery_zone_id') == $zone->id)
+                >
+                    {{ $zone->name }}
+                    -
+                    {{ number_format((float) $zone->delivery_fee, 2) }}
+                </option>
+            @endforeach
+        </select>
+
+        @error('delivery_zone_id')
+            <div class="od-error">{{ $message }}</div>
+        @enderror
+
+        <div id="deliveryZoneHint" class="od-help"></div>
+    </div>
+
+    <div class="od-field">
+        <label class="od-label">
+            العنوان بالتفصيل
+        </label>
+
+        <textarea
+            name="delivery_address_details"
+            id="deliveryAddressDetails"
+            rows="3"
+            class="od-input"
+            placeholder="اكتب العنوان بالتفصيل"
+        >{{ old('delivery_address_details') }}</textarea>
+
+        @error('delivery_address_details')
+            <div class="od-error">{{ $message }}</div>
+        @enderror
+    </div>
+
+    <div class="od-address-grid">
+        <div class="od-field">
+            <label class="od-label">المنطقة / الحي</label>
+            <input
+                type="text"
+                name="delivery_area"
+                value="{{ old('delivery_area') }}"
+                class="od-input"
+            >
+        </div>
+
+        <div class="od-field">
+            <label class="od-label">العمارة</label>
+            <input
+                type="text"
+                name="delivery_building"
+                value="{{ old('delivery_building') }}"
+                class="od-input"
+            >
+        </div>
+
+        <div class="od-field">
+            <label class="od-label">الدور</label>
+            <input
+                type="text"
+                name="delivery_floor"
+                value="{{ old('delivery_floor') }}"
+                class="od-input"
+            >
+        </div>
+
+        <div class="od-field">
+            <label class="od-label">الشقة</label>
+            <input
+                type="text"
+                name="delivery_apartment"
+                value="{{ old('delivery_apartment') }}"
+                class="od-input"
+            >
+        </div>
+    </div>
+
+    <div class="od-field">
+        <label class="od-label">علامة مميزة</label>
+        <input
+            type="text"
+            name="delivery_landmark"
+            value="{{ old('delivery_landmark') }}"
+            class="od-input"
+            placeholder="مثال: بجوار الصيدلية"
+        >
+    </div>
+</div>
 
                         <div class="mb-3">
                             <label class="form-label">ملاحظات عامة</label>
@@ -3762,25 +4003,44 @@
     @endif
 
 
+@php
+    $deliveryZonesPayload = collect($deliveryZones ?? [])->map(function ($zone) {
+        return [
+            'id' => $zone->id,
+            'name' => $zone->name,
+            'delivery_fee' => (float) $zone->delivery_fee,
+            'min_order_amount' => $zone->min_order_amount !== null ? (float) $zone->min_order_amount : null,
+            'estimated_minutes' => $zone->estimated_minutes,
+        ];
+    })->values();
 
+    $deliveryConfigPayload = [
+        'enabled' => (bool) ($deliverySettings?->is_enabled ?? false),
+        'feeCalculationMode' => $deliverySettings?->fee_calculation_mode ?? 'zone',
+        'feeIncludedInTotal' => (bool) ($deliverySettings?->delivery_fee_included_in_total ?? true),
+        'showFeeOnReceipt' => (bool) ($deliverySettings?->show_delivery_fee_on_receipt ?? true),
+        'requireZone' => (bool) ($deliverySettings?->require_zone_for_delivery ?? true),
+        'zones' => $deliveryZonesPayload,
+    ];
+@endphp
 
-    {{-- <div class="cart-float" id="cartFloat" style="display:none;">
-        <button type="button" class="cart-button" data-bs-toggle="modal" data-bs-target="#cartModal">
-            <span>
-                <i class="bi bi-bag"></i>
-                الطلب
-            </span>
-
-            <strong id="cartFloatTotal">0.00</strong>
-        </button>
-    </div> --}}
-
-
-    @include($menuTheme['views']['cart'])
     <script>
         window.restaurantMenuItems = @json($itemsPayload);
         window.restaurantMenuOffers = @json($offersPayload);
         console.log('OFFERS PAYLOAD', window.restaurantMenuOffers);
+        
+            window.deliveryConfig = @json($deliveryConfigPayload);
+
+    console.log('OFFERS PAYLOAD', window.restaurantMenuOffers);
+    console.log('DELIVERY CONFIG', window.deliveryConfig);
+
+    //      window.deliveryConfig = {
+    //     enabled: @json((bool) ($deliverySettings?->is_enabled ?? false)),
+    //     feeCalculationMode: @json($deliverySettings?->fee_calculation_mode ?? 'zone'),
+    //     feeIncludedInTotal: @json((bool) ($deliverySettings?->delivery_fee_included_in_total ?? true)),
+    //     showFeeOnReceipt: @json((bool) ($deliverySettings?->show_delivery_fee_on_receipt ?? true)),
+    //     requireZone: @json((bool) ($deliverySettings?->require_zone_for_delivery ?? true)),
+    // };
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -3830,8 +4090,64 @@
             const tableNumberWrap = document.getElementById('tableNumberWrap');
             const deliveryAddressWrap = document.getElementById('deliveryAddressWrap');
 
+        
+
             let currentItem = null;
-            let cart = [];
+
+const CART_STORAGE_KEY = 'restaurant_menu_cart_{{ $workspace->id }}_{{ $branch->id ?? "main" }}';
+
+let cart = loadCart();
+
+function loadCart() {
+    try {
+        const stored = localStorage.getItem(CART_STORAGE_KEY);
+
+        if (!stored) {
+            return [];
+        }
+
+        const parsed = JSON.parse(stored);
+
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error('Failed to load cart', error);
+        return [];
+    }
+}
+
+function saveCart() {
+    try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    } catch (error) {
+        console.error('Failed to save cart', error);
+    }
+}
+
+function clearCart() {
+    localStorage.removeItem(CART_STORAGE_KEY);
+    cart = [];
+    renderCart();
+}
+
+
+const menuUrlParams = new URLSearchParams(window.location.search);
+
+if (menuUrlParams.get('clear_cart') === '1') {
+    localStorage.removeItem(CART_STORAGE_KEY);
+    cart = [];
+
+    menuUrlParams.delete('clear_cart');
+
+    const cleanUrl = window.location.pathname
+        + (menuUrlParams.toString() ? '?' + menuUrlParams.toString() : '');
+
+    window.history.replaceState({}, '', cleanUrl);
+}
+
+
+
+
+
 
             function money(value, currency) {
                 const number = Number(value || 0).toFixed(2);
@@ -4069,19 +4385,7 @@
                     line_total: pricing.lineTotal,
                     currency: currentItem.currency
                 });
-                // cart.push({
-                //     key: Date.now() + '_' + Math.random().toString(16).slice(2),
-                //     item: currentItem,
-                //     variant,
-                //     options,
-                //     quantity,
-                //     notes: notesInput.value || '',
-                //     unit_price: pricing.unit,
-                //     options_total: pricing.optionsTotal,
-                //     line_total: pricing.lineTotal,
-                //     currency: currentItem.currency
-                // });
-
+     
                 renderCart();
                 modal.hide();
             }
@@ -4136,7 +4440,145 @@
                 return cart.reduce((sum, line) => sum + Number(line.line_total || 0), 0);
             }
 
+
+            
+
+
+
+            // ///////////////////////////////////////////////////////////
+            function getSelectedDeliveryZone() {
+    const select = document.getElementById('deliveryZoneSelect');
+
+    if (!select || !select.value) {
+        return null;
+    }
+
+    const option = select.options[select.selectedIndex];
+
+    return {
+        id: select.value,
+        fee: Number(option.dataset.fee || 0),
+        minOrder: option.dataset.minOrder ? Number(option.dataset.minOrder) : null,
+        estimated: option.dataset.estimated || null,
+        name: option.textContent.trim(),
+    };
+}
+
+function getDeliveryFee() {
+    const orderTypeInput = document.querySelector('[name="order_type"]:checked')
+        || document.querySelector('[name="order_type"]');
+
+    const orderType = orderTypeInput ? orderTypeInput.value : 'takeaway';
+
+    if (orderType !== 'delivery') {
+        return 0;
+    }
+
+    const config = window.deliveryConfig || {};
+
+    if (!config.enabled) {
+        return 0;
+    }
+
+    if (config.feeCalculationMode === 'free') {
+        return 0;
+    }
+
+    const zone = getSelectedDeliveryZone();
+
+    if (config.feeCalculationMode === 'zone' && zone) {
+        return zone.fee;
+    }
+
+    return 0;
+}
+function getCartSubtotal() {
+    return cart.reduce(function (sum, line) {
+        return sum + Number(line.line_total || 0);
+    }, 0);
+}
+function getCartSubtotalX() {
+    return cart.reduce(function (sum, line) {
+        return sum + Number(line.total || 0);
+    }, 0);
+}
+
+function getFinalTotal() {
+    const subtotal = getCartSubtotal();
+    const deliveryFee = getDeliveryFee();
+    const config = window.deliveryConfig || {};
+
+    if (config.feeIncludedInTotal) {
+        return subtotal + deliveryFee;
+    }
+
+    return subtotal;
+}
+            // ///////////////////////////////////////////////////////////
+function syncDeliveryFields() {
+    const deliveryFields = document.getElementById('deliveryFields');
+    const zoneHint = document.getElementById('deliveryZoneHint');
+
+    const orderTypeInput = document.querySelector('[name="order_type"]:checked')
+        || document.querySelector('[name="order_type"]');
+
+    const orderType = orderTypeInput ? orderTypeInput.value : 'takeaway';
+
+    if (!deliveryFields) {
+        return;
+    }
+
+    const config = window.deliveryConfig || {};
+
+    const show = orderType === 'delivery' && config.enabled;
+
+    deliveryFields.style.display = show ? '' : 'none';
+
+    if (show && zoneHint) {
+        const zone = getSelectedDeliveryZone();
+
+        if (zone) {
+    const currency = cart[0]?.currency || 'EGP';
+
+    let text = 'رسوم التوصيل: ' + money(zone.fee, currency);
+
+    if (zone.estimated) {
+        text += ' · الوقت المتوقع: ' + zone.estimated + ' دقيقة';
+    }
+
+    if (zone.minOrder) {
+        text += ' · الحد الأدنى: ' + money(zone.minOrder, currency);
+    }
+
+    zoneHint.textContent = text;
+} else {
+    zoneHint.textContent = '';
+}
+    }
+
+    renderCart();
+}
+
+
+
+
+
+
+
+
             function renderCart() {
+
+    saveCart();
+        if (!cartFloat || !cartItemsWrap || !cartModalTotal || !checkoutItemsInputs) {
+        console.error('Cart elements missing', {
+            cartFloat,
+            cartItemsWrap,
+            cartModalTotal,
+            checkoutItemsInputs
+        });
+        return;
+    }
+
                 if (cart.length === 0) {
                     cartFloat.style.display = 'none';
                     cartItemsWrap.innerHTML = `<div class="text-center text-muted py-3">الطلب فارغ.</div>`;
@@ -4145,46 +4587,34 @@
                     return;
                 }
 
+                // const currency = cart[0]?.currency || 'EGP';
+                // const total = cartTotal();
+
+                // cartFloat.style.display = 'block';
+                // cartFloatTotal.textContent = money(total, currency);
+                // cartModalTotal.textContent = money(total, currency);
                 const currency = cart[0]?.currency || 'EGP';
-                const total = cartTotal();
+const subtotal = getCartSubtotal();
+const deliveryFee = getDeliveryFee();
+const total = getFinalTotal();
 
-                cartFloat.style.display = 'block';
-                cartFloatTotal.textContent = money(total, currency);
-                cartModalTotal.textContent = money(total, currency);
+cartFloat.style.display = 'block';
+cartFloatTotal.textContent = money(total, currency);
+cartModalTotal.textContent = money(total, currency);
 
-                // cartItemsWrap.innerHTML = cart.map(function(line) {
-                //     const optionsText = line.options.length ?
-                //         line.options.map(o => `${o.group_name}: ${o.name}`).join('، ') :
-                //         '';
+const deliverySummary = document.getElementById('deliverySummary');
 
-                //     return `
-            //     <div class="border rounded-4 p-3 mb-2">
-            //         <div class="d-flex justify-content-between gap-2">
-            //             <div>
-            //                 <div class="fw-bold">
-            //                     ${line.item.name}
-            //                     ${line.variant ? ' - ' + line.variant.name : ''}
-            //                 </div>
+if (deliverySummary) {
+    if (deliveryFee > 0) {
+        deliverySummary.style.display = '';
+        deliverySummary.textContent = 'رسوم التوصيل: ' + money(deliveryFee, currency);
+    } else {
+        deliverySummary.style.display = 'none';
+        deliverySummary.textContent = '';
+    }
+}
 
-            //                 <div class="small text-muted">
-            //                     الكمية: ${line.quantity}
-            //                 </div>
-
-            //                 ${optionsText ? `<div class="small text-muted mt-1">${optionsText}</div>` : ''}
-            //                 ${line.notes ? `<div class="small mt-1">ملاحظة: ${line.notes}</div>` : ''}
-            //             </div>
-
-            //             <div class="text-end">
-            //                 <strong>${money(line.line_total, line.currency)}</strong>
-
-            //                 <button type="button" class="btn btn-sm btn-outline-danger d-block mt-2 remove-cart-line" data-key="${line.key}">
-            //                     حذف
-            //                 </button>
-            //             </div>
-            //         </div>
-            //     </div>
-            // `;
-                // }).join('');
+       
                 cartItemsWrap.innerHTML = cart.map(function(line) {
                     const isOffer = line.line_type === 'offer';
 
@@ -4239,29 +4669,7 @@
                 renderCheckoutInputs();
             }
 
-            // function renderCheckoutInputs() {
-            //     let html = '';
-
-            //     cart.forEach(function(line, index) {
-            //         html += `
-        //         <input type="hidden" name="items[${index}][item_id]" value="${line.item.id}">
-        //         <input type="hidden" name="items[${index}][quantity]" value="${line.quantity}">
-        //         <input type="hidden" name="items[${index}][notes]" value="${escapeHtml(line.notes)}">
-        //     `;
-
-            //         if (line.variant) {
-            //             html +=
-            //                 `<input type="hidden" name="items[${index}][variant_id]" value="${line.variant.id}">`;
-            //         }
-
-            //         line.options.forEach(function(option, optionIndex) {
-            //             html +=
-            //                 `<input type="hidden" name="items[${index}][options][${optionIndex}]" value="${option.id}">`;
-            //         });
-            //     });
-
-            //     checkoutItemsInputs.innerHTML = html;
-            // }
+      
             function renderCheckoutInputs() {
                 let html = '';
 
@@ -4271,7 +4679,7 @@
                     html += `
             <input type="hidden" name="items[${index}][line_type]" value="${lineType}">
             <input type="hidden" name="items[${index}][quantity]" value="${line.quantity}">
-            <input type="hidden" name="items[${index}][notes]" value="${escapeHtml(line.notes)}">
+            <input type="hidden" name="items[${index}][notes]" value="${escapeHtml(line.notes || '')}">
         `;
 
                     if (lineType === 'offer') {
@@ -4297,6 +4705,7 @@
                     });
                 });
 
+
                 checkoutItemsInputs.innerHTML = html;
             }
 
@@ -4309,6 +4718,17 @@
             }
 
             function syncOrderTypeFields() {
+    const type = orderType.value;
+
+    tableNumberWrap.style.display = type === 'dine_in' ? 'block' : 'none';
+
+    if (deliveryAddressWrap) {
+        deliveryAddressWrap.style.display = 'none';
+    }
+
+    syncDeliveryFields();
+}
+            function syncOrderTypeFieldsX() {
                 const type = orderType.value;
 
                 tableNumberWrap.style.display = type === 'dine_in' ? 'block' : 'none';
@@ -4337,76 +4757,86 @@
                 renderCart();
             });
 
-            // checkoutForm?.addEventListener('submit', function(event) {
-            //     if (cart.length === 0) {
-            //         event.preventDefault();
-            //         alert('يجب إضافة صنف واحد على الأقل.');
-            //     }
-            // });
+       
 
             checkoutForm?.addEventListener('submit', function(event) {
-                if (cart.length === 0) {
-                    event.preventDefault();
-                    alert('يجب إضافة صنف واحد على الأقل.');
-                    return;
-                }
+    // cart = loadCart();
 
-                if (window.openInvoiceEnabled && window.hasSelectedTable && !window.hasCurrentInvoice) {
-                    event.preventDefault();
-                    alert('يجب فتح فاتورة أو الانضمام لفاتورة موجودة قبل إرسال الطلب.');
-                }
-            });
+    if (cart.length === 0) {
+        event.preventDefault();
+        alert('يجب إضافة صنف واحد على الأقل.');
+        return;
+    }
+
+
+
+
+    const currentOrderType = orderType ? orderType.value : 'takeaway';
+
+if (currentOrderType === 'delivery') {
+    const config = window.deliveryConfig || {};
+
+    if (!config.enabled) {
+        event.preventDefault();
+        alert('الدليفري غير متاح حاليًا.');
+        return;
+    }
+
+    const zoneSelect = document.getElementById('deliveryZoneSelect');
+
+    if (config.requireZone && !zoneSelect?.value) {
+        event.preventDefault();
+        alert('اختر منطقة التوصيل.');
+        return;
+    }
+
+    const address = document.getElementById('deliveryAddressDetails')?.value?.trim();
+
+    if (!address) {
+        event.preventDefault();
+        alert('اكتب عنوان التوصيل بالتفصيل.');
+        return;
+    }
+
+    const subtotal = getCartSubtotal();
+    const zone = getSelectedDeliveryZone();
+
+    if (zone && zone.minOrder && subtotal < zone.minOrder) {
+        event.preventDefault();
+        alert('الحد الأدنى للتوصيل لهذه المنطقة هو ' + money(zone.minOrder, cart[0]?.currency || 'EGP'));
+        return;
+    }
+}
+
+
+
+
+
+    renderCheckoutInputs();
+
+    if (!checkoutItemsInputs.innerHTML.trim()) {
+        event.preventDefault();
+        alert('حدث خطأ في تجهيز الطلب. أعد فتح السلة وحاول مرة أخرى.');
+        return;
+    }
+
+    if (window.openInvoiceEnabled && window.hasSelectedTable && !window.hasCurrentInvoice) {
+        event.preventDefault();
+        alert('يجب فتح فاتورة أو الانضمام لفاتورة موجودة قبل إرسال الطلب.');
+        return;
+    }
+
+    saveCart();
+
+    console.log('CHECKOUT INPUTS', checkoutItemsInputs.innerHTML);
+});
+
 
             orderType?.addEventListener('change', syncOrderTypeFields);
 
-            // document.querySelectorAll('.item-card, .item-card-large, .elegant-item, .featured-item-card, .collection-item, .offer-slide').forEach(function (card) {
-            //     card.addEventListener('click', function() {
-            //         const itemId = card.getAttribute('data-item-id');
-            //         const item = window.restaurantMenuItems[itemId];
-
-            //         if (!item) {
-            //             return;
-            //         }
-
-            //         renderItem(item);
-            //         modal.show();
-            //     });
-            // });
-
-            //             document.querySelectorAll('.item-card, .item-card-large, .elegant-item, .featured-item-card, .collection-item, .offer-slide, .od-food-card, .od-featured-card, .od-collection-item, .od-offer-card').forEach(function (card) {
-            //     card.addEventListener('click', function () {
-            //         const itemId = card.getAttribute('data-item-id');
-
-            //         if (!itemId) {
-            //             return;
-            //         }
-
-            //         openItemModal(itemId);
-            //     });
-            // });
+ 
 
 
-            // document.querySelectorAll(
-            //     '.item-card, .item-card-large, .elegant-item, .featured-item-card, .collection-item, .offer-slide, .od-food-card, .od-featured-card, .od-collection-item, .od-offer-card'
-            // ).forEach(function(card) {
-            //     card.addEventListener('click', function() {
-            //         const itemId = card.getAttribute('data-item-id');
-
-            //         if (!itemId) {
-            //             return;
-            //         }
-
-            //         const item = window.restaurantMenuItems[itemId];
-
-            //         if (!item) {
-            //             console.error('Item not found in window.restaurantMenuItems:', itemId);
-            //             return;
-            //         }
-
-            //         renderItem(item);
-            //         modal.show();
-            //     });
-            // });
             document.querySelectorAll(
                 '.item-card, .item-card-large, .elegant-item, .featured-item-card, .collection-item, .offer-slide, .od-food-card, .od-featured-card, .od-collection-item, .od-offer-card, .od-offer-carousel-slide'
             ).forEach(function(card) {
@@ -4489,14 +4919,32 @@
             });
 
 
+// document.querySelectorAll('[name="order_type"]').forEach(function (input) {
+//     input.addEventListener('change', syncDeliveryFields);
+// });
 
-            renderCart();
-            syncOrderTypeFields();
+// document.getElementById('deliveryZoneSelect')?.addEventListener('change', syncDeliveryFields);
 
-            @if ($errors->any() || session('error'))
-                const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
-                cartModal.show();
-            @endif
+// syncDeliveryFields();
+
+document.getElementById('deliveryZoneSelect')?.addEventListener('change', syncDeliveryFields);
+
+
+           cart = loadCart();
+renderCart();
+syncOrderTypeFields();
+
+@if ($errors->any() || session('error'))
+    renderCheckoutInputs();
+
+    const cartModalElement = document.getElementById('cartModal');
+
+    if (cartModalElement) {
+        const cartModal = bootstrap.Modal.getOrCreateInstance(cartModalElement);
+        cartModal.show();
+    }
+@endif
+       
         })();
         (function() {
             const categoryLinks = document.querySelectorAll('.od-category-pill');
@@ -4547,58 +4995,90 @@
 
 
 
-
-        document.querySelectorAll('.od-offer-carousel-slide, .od-offer-card').forEach(function(card) {
-            card.addEventListener('click', function(event) {
-                const offerId = card.getAttribute('data-offer-id');
-                const itemId = card.getAttribute('data-item-id');
-
-                if (offerId && window.restaurantMenuOffers && window.restaurantMenuOffers[offerId]) {
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    const offer = window.restaurantMenuOffers[offerId];
-
-                    if (offer.order_mode === 'single_item' && itemId) {
-                        const item = window.restaurantMenuItems[itemId];
-
-                        if (item) {
-                            renderItem(item);
-                            modal.show();
-                        }
-
-                        return;
-                    }
-
-                    addOfferToCart(offer);
-                }
-            });
-        });
-
-
-
-        document.querySelectorAll(
-            '.item-card, .item-card-large, .elegant-item, .featured-item-card, .collection-item, .offer-slide, .od-food-card, .od-featured-card, .od-collection-item, .od-offer-card, .od-offer-carousel-slide'
-        ).forEach(function(card) {
-            card.addEventListener('click', function() {
-                const itemId = card.getAttribute('data-item-id');
-
-                if (!itemId) {
-                    return;
-                }
-
-                const item = window.restaurantMenuItems[itemId];
-
-                if (!item) {
-                    console.error('Item not found in window.restaurantMenuItems:', itemId);
-                    return;
-                }
-
-                renderItem(item);
-                modal.show();
-            });
-        });
     </script>
+
+
+
+
+
+{{-- <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/restaurant-menu-sw.js')
+                .catch(function (error) {
+                    console.warn('Service worker registration failed:', error);
+                });
+        });
+    }
+</script> --}}
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/restaurant-menu-sw.js', {
+                scope: '/'
+            }).catch(function (error) {
+                console.warn('Service worker registration failed:', error);
+            });
+        });
+    }
+</script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (window.__swRefreshing) {
+                return;
+            }
+
+            window.__swRefreshing = true;
+            window.location.reload();
+        });
+    }
+</script>
+
+
+<script>
+    (function () {
+        const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+        const isStandalone = window.navigator.standalone === true
+            || window.matchMedia('(display-mode: standalone)').matches;
+
+        if (isIos && !isStandalone) {
+            const hint = document.getElementById('iosInstallHint');
+
+            if (hint && !localStorage.getItem('ios_pwa_hint_closed')) {
+                hint.style.display = 'block';
+
+                hint.querySelector('.od-ios-install-close')?.addEventListener('click', function () {
+                    localStorage.setItem('ios_pwa_hint_closed', '1');
+                });
+            }
+        }
+    })();
+</script>
+
+
+{{-- @php
+    $deliveryZonesPayload = collect($deliveryZones ?? [])->map(function ($zone) {
+        return [
+            'id' => $zone->id,
+            'name' => $zone->name,
+            'delivery_fee' => (float) $zone->delivery_fee,
+            'min_order_amount' => $zone->min_order_amount !== null ? (float) $zone->min_order_amount : null,
+            'estimated_minutes' => $zone->estimated_minutes,
+        ];
+    })->values();
+@endphp
+
+<script>
+    window.deliveryConfig = {
+        enabled: @json((bool) ($deliverySettings?->is_enabled ?? false)),
+        feeCalculationMode: @json($deliverySettings?->fee_calculation_mode ?? 'zone'),
+        feeIncludedInTotal: @json((bool) ($deliverySettings?->delivery_fee_included_in_total ?? true)),
+        showFeeOnReceipt: @json((bool) ($deliverySettings?->show_delivery_fee_on_receipt ?? true)),
+        requireZone: @json((bool) ($deliverySettings?->require_zone_for_delivery ?? true)),
+        zones: @json($deliveryZonesPayload),
+    };
+</script> --}}
 
 </body>
 

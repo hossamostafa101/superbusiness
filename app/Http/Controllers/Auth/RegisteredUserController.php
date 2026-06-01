@@ -53,6 +53,9 @@ public function store(Request $request): RedirectResponse
         'marketing_opt_in'   => !empty($validated['marketing_opt_in']),
     ]);
 
+    app(\Modules\Affiliate\Services\AffiliateTrackingService::class)
+    ->attachRegisteredUser($user);
+
     event(new Registered($user));
 
     Auth::login($user);

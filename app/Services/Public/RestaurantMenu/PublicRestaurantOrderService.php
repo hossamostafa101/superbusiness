@@ -67,6 +67,69 @@ class PublicRestaurantOrderService
             }
 
 
+            $customerAccountId = session('public_customer_account_id_' . $workspace->id);
+
+
+
+
+
+
+            $deliverySettings = app(\App\Services\App\RestaurantMenu\RestaurantDeliverySettingsService::class)
+                ->get($workspace, $branch);
+
+            $deliveryZone = null;
+            $deliveryFee = 0;
+
+            if (($data['order_type'] ?? null) === 'delivery') {
+                if (! empty($data['delivery_zone_id'])) {
+                    $deliveryZone = \App\Models\RestaurantMenu\RestaurantDeliveryZone::query()
+                        ->where('workspace_id', $workspace->id)
+                        ->where('is_active', true)
+                        ->where(function ($query) use ($branch) {
+                            $query->whereNull('branch_id')
+                                ->orWhere('branch_id', $branch->id);
+                        })
+                        ->whereKey($data['delivery_zone_id'])
+                        ->first();
+                }
+
+                if ($deliverySettings->fee_calculation_mode === 'zone' && $deliveryZone) {
+                    $deliveryFee = (float) $deliveryZone->delivery_fee;
+                }
+
+                if ($deliverySettings->fee_calculation_mode === 'free') {
+                    $deliveryFee = 0;
+                }
+            }
+
+            $subtotal = (float) $pricing['subtotal'];
+$discountTotal = (float) ($pricing['discount_total'] ?? 0);
+$taxTotal = (float) ($pricing['tax_total'] ?? 0);
+
+if (
+    ($data['order_type'] ?? null) === 'delivery'
+    && $deliveryZone
+    && ! is_null($deliveryZone->min_order_amount)
+    && $subtotal < (float) $deliveryZone->min_order_amount
+) {
+    throw \Illuminate\Validation\ValidationException::withMessages([
+        'delivery_zone_id' => 'الحد الأدنى للتوصيل لهذه المنطقة هو '
+            . number_format((float) $deliveryZone->min_order_amount, 2),
+    ]);
+}
+
+$total = $subtotal - $discountTotal + $taxTotal;
+
+if (
+    ($data['order_type'] ?? null) === 'delivery'
+    && (bool) $deliverySettings->delivery_fee_included_in_total
+) {
+    $total += $deliveryFee;
+}
+
+
+
+
             $order = RestaurantOrder::create([
                 'workspace_id' => $workspace->id,
                 'branch_id' => $branch->id,
@@ -80,14 +143,34 @@ class PublicRestaurantOrderService
                 'table_id' => $table?->id,
                 'table_number' => $table?->number ?? ($data['table_number'] ?? null),
                 'delivery_address' => $data['delivery_address'] ?? null,
+                'delivery_zone_id' => $deliveryZone?->id,
+
+'delivery_fee_included_in_total' => (bool) $deliverySettings->delivery_fee_included_in_total,
+'show_delivery_fee_on_receipt' => (bool) $deliverySettings->show_delivery_fee_on_receipt,
+'delivery_fee_payment_target' => $deliverySettings->delivery_fee_payment_target,
+'delivery_status' => $deliverySettings->default_delivery_status,
+
+'delivery_address_details' => $data['delivery_address_details'] ?? null,
+'delivery_area' => $data['delivery_area'] ?? null,
+'delivery_building' => $data['delivery_building'] ?? null,
+'delivery_floor' => $data['delivery_floor'] ?? null,
+'delivery_apartment' => $data['delivery_apartment'] ?? null,
+'delivery_landmark' => $data['delivery_landmark'] ?? null,
+
                 'notes' => $data['notes'] ?? null,
 
-                'subtotal' => $pricing['subtotal'],
-                'discount_total' => $pricing['discount_total'],
-                'delivery_fee' => $pricing['delivery_fee'],
-                'tax_total' => $pricing['tax_total'],
-                'total' => $pricing['total'],
-                'currency' => $pricing['currency'],
+                // 'subtotal' => $pricing['subtotal'],
+                // 'discount_total' => $pricing['discount_total'],
+                // 'delivery_fee' => $pricing['delivery_fee'],
+                // 'tax_total' => $pricing['tax_total'],
+                // 'total' => $pricing['total'],
+                // 'currency' => $pricing['currency'],
+                'subtotal' => $subtotal,
+'discount_total' => $discountTotal,
+'delivery_fee' => $deliveryFee,
+'tax_total' => $taxTotal,
+'total' => $total,
+'currency' => $pricing['currency'],
 
                 'status' => 'new',
                 'payment_status' => 'unpaid',
@@ -101,134 +184,86 @@ class PublicRestaurantOrderService
 
 
                 'invoice_id' => $invoice?->id,
+
+                'customer_account_id' => $customerAccountId,
             ]);
 
             foreach ($pricing['lines'] as $line) {
-                // $orderItem = $order->items()->create([
-                //     'workspace_id' => $workspace->id,
-                //     'branch_id' => $branch->id,
 
-                //     'item_id' => $line['item']->id,
-                //     'variant_id' => $line['variant']?->id,
-
-                //     'item_name' => $line['item']->name,
-                //     'variant_name' => $line['variant']?->name,
-
-                //     'quantity' => $line['quantity'],
-                //     'unit_price' => $line['unit_price'],
-                //     'options_total' => $line['options_total'],
-                //     'line_total' => $line['line_total'],
-
-                //     'currency' => $line['currency'],
-                //     'notes' => $line['notes'],
-
-                //     'metadata' => [
-                //         'item_snapshot' => [
-                //             'description' => $line['item']->description,
-                //             'image' => $line['item']->image,
-                //         ],
-                //     ],
-                // ]);
                 $isOfferLine = ($line['line_type'] ?? 'item') === 'offer';
 
-$orderItem = $order->items()->create([
-    'workspace_id' => $workspace->id,
-    'branch_id' => $branch->id,
+                $orderItem = $order->items()->create([
+                    'workspace_id' => $workspace->id,
+                    'branch_id' => $branch->id,
 
-    'line_type' => $isOfferLine ? 'offer' : 'item',
-    'offer_id' => $isOfferLine ? $line['offer']->id : null,
+                    'line_type' => $isOfferLine ? 'offer' : 'item',
+                    'offer_id' => $isOfferLine ? $line['offer']->id : null,
 
-    'item_id' => $isOfferLine ? null : $line['item']->id,
-    'variant_id' => $isOfferLine ? null : $line['variant']?->id,
+                    'item_id' => $isOfferLine ? null : $line['item']->id,
+                    'variant_id' => $isOfferLine ? null : $line['variant']?->id,
 
-    'item_name' => $isOfferLine ? $line['offer']->title : $line['item']->name,
-    'variant_name' => $isOfferLine ? null : $line['variant']?->name,
+                    'item_name' => $isOfferLine ? $line['offer']->title : $line['item']->name,
+                    'variant_name' => $isOfferLine ? null : $line['variant']?->name,
 
-    'quantity' => $line['quantity'],
-    'unit_price' => $line['unit_price'],
-    'options_total' => $line['options_total'],
-    'line_total' => $line['line_total'],
-    'currency' => $line['currency'],
-    'notes' => $line['notes'],
+                    'quantity' => $line['quantity'],
+                    'unit_price' => $line['unit_price'],
+                    'options_total' => $line['options_total'],
+                    'line_total' => $line['line_total'],
+                    'currency' => $line['currency'],
+                    'notes' => $line['notes'],
 
-    'metadata' => $isOfferLine
-        ? [
-            'offer_snapshot' => [
-                'title' => $line['offer']->title,
-                'subtitle' => $line['offer']->subtitle,
-                'description' => $line['offer']->description,
-                'image' => $line['offer']->image,
-                'old_price' => $line['offer']->old_price,
-                'new_price' => $line['offer']->new_price,
-            ],
-        ]
-        : [
-            'item_snapshot' => [
-                'description' => $line['item']->description,
-                'image' => $line['item']->image,
-            ],
-        ],
-]);
-
-
-
+                    'metadata' => $isOfferLine
+                        ? [
+                            'offer_snapshot' => [
+                                'title' => $line['offer']->title,
+                                'subtitle' => $line['offer']->subtitle,
+                                'description' => $line['offer']->description,
+                                'image' => $line['offer']->image,
+                                'old_price' => $line['offer']->old_price,
+                                // 'new_price' => $line['offer']->new_price,
+                                'new_price' => $line['offer']->new_price ?? $line['offer']->price ?? null,
+                            ],
+                        ]
+                        : [
+                            'item_snapshot' => [
+                                'description' => $line['item']->description,
+                                'image' => $line['item']->image,
+                            ],
+                        ],
+                ]);
 
 
-                // if ($invoice) {
-                //     $invoiceItem = $invoice->items()->create([
-                //         'workspace_id' => $workspace->id,
-                //         'branch_id' => $branch->id,
-                //         'guest_id' => $invoiceGuest?->id,
-                //         'order_id' => $order->id,
 
-                //         'item_id' => $line['item']->id,
-                //         'variant_id' => $line['variant']?->id,
 
-                //         'item_name' => $line['item']->name,
-                //         'variant_name' => $line['variant']?->name,
 
-                //         'quantity' => $line['quantity'],
-                //         'unit_price' => $line['unit_price'],
-                //         'options_total' => $line['options_total'],
-                //         'line_total' => $line['line_total'],
-
-                //         'currency' => $line['currency'],
-                //         'notes' => $line['notes'],
-                //         'status' => 'new',
-
-                //         'metadata' => [
-                //             'order_item_id' => $orderItem->id,
-                //         ],
-                //     ]);
-                // }
                 if ($invoice) {
-    $invoiceItem = $invoice->items()->create([
-        'workspace_id' => $workspace->id,
-        'branch_id' => $branch->id,
-        'guest_id' => $invoiceGuest?->id,
-        'order_id' => $order->id,
+                    $invoiceItem = $invoice->items()->create([
+                        'workspace_id' => $workspace->id,
+                        'branch_id' => $branch->id,
+                        'guest_id' => $invoiceGuest?->id,
+                        'order_id' => $order->id,
 
-        'line_type' => $isOfferLine ? 'offer' : 'item',
-        'offer_id' => $isOfferLine ? $line['offer']->id : null,
+                        'line_type' => $isOfferLine ? 'offer' : 'item',
+                        'offer_id' => $isOfferLine ? $line['offer']->id : null,
 
-        'item_id' => $isOfferLine ? null : $line['item']->id,
-        'variant_id' => $isOfferLine ? null : $line['variant']?->id,
+                        'item_id' => $isOfferLine ? null : $line['item']->id,
+                        'variant_id' => $isOfferLine ? null : $line['variant']?->id,
 
-        'item_name' => $isOfferLine ? $line['offer']->title : $line['item']->name,
-        'variant_name' => $isOfferLine ? null : $line['variant']?->name,
+                        'item_name' => $isOfferLine ? $line['offer']->title : $line['item']->name,
+                        'variant_name' => $isOfferLine ? null : $line['variant']?->name,
 
-        'quantity' => $line['quantity'],
-        'unit_price' => $line['unit_price'],
-        'options_total' => $line['options_total'],
-        'line_total' => $line['line_total'],
-        'currency' => $line['currency'],
-        'notes' => $line['notes'],
-        'status' => 'new',
-        'metadata' => [
-            'order_item_id' => $orderItem->id,
-        ],
-    ]);
-}
+                        'quantity' => $line['quantity'],
+                        'unit_price' => $line['unit_price'],
+                        'options_total' => $line['options_total'],
+                        'line_total' => $line['line_total'],
+                        'currency' => $line['currency'],
+                        'notes' => $line['notes'],
+                        'status' => 'new',
+                        'metadata' => [
+                            'order_item_id' => $orderItem->id,
+                        ],
+                    ]);
+                }
 
 
 
@@ -270,8 +305,8 @@ $orderItem = $order->items()->create([
             }
 
             if ($invoice) {
-    $this->invoiceService->recalculateTotals($invoice);
-}
+                $this->invoiceService->recalculateTotals($invoice);
+            }
             $this->createBusinessRequest($workspace, $order);
 
             return $order->load(['items.options', 'branch']);

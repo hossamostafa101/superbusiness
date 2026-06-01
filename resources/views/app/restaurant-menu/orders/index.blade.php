@@ -22,6 +22,13 @@
                 <span data-count-key="new">{{ $counts['new'] ?? 0 }}</span>
             </a>
 
+            <a href="{{ route('app.restaurant-menu.orders.index', ['workspace' => $workspace, 'status' => 'accepted']) }}"
+   class="orders-tab {{ $status === 'accepted' ? 'active' : '' }}">
+    <i class="bi bi-check2-circle"></i>
+    Accepted
+    <span data-count-key="accepted">{{ $counts['accepted'] ?? 0 }}</span>
+</a>
+
             <a href="{{ route('app.restaurant-menu.orders.index', ['workspace' => $workspace, 'status' => 'preparing']) }}"
                class="orders-tab {{ $status === 'preparing' ? 'active' : '' }}">
                 <i class="bi bi-fire"></i>
